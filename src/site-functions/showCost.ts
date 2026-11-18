@@ -48,7 +48,8 @@ export default function showCost(args?: { note?: string }): Record<string, unkno
             status,
             note,
             url: CSU_LINKS.financialAidFaq.url,
-            actionPhrase: 'Help me with my financial aid verification',
+            // Distinct from the journey step's phrase, so Val can tell "show me" from "yes, start it".
+            actionPhrase: 'Yes, start my verification',
         } as unknown as Record<string, unknown>,
     });
 
@@ -58,7 +59,8 @@ export default function showCost(args?: { note?: string }): Record<string, unkno
         status,
         note:
             status === 'hold'
-                ? 'The cost card is on screen with NO net figure, on purpose. Do not estimate one. Say the aid looks strong but is paused until one check is done.'
-                : 'The cost card is on screen. Do not read the numbers aloud unless asked.',
+                ? 'The cost card is on screen with NO net figure, on purpose. Do not estimate one. Say the aid looks strong but is paused until one check is done, and ask if she wants to start that check now.' +
+                  ' Then STOP and wait for her answer: do not call prefillForm or draw another card in this turn. The form opens only after she says yes or taps "Start my verification".'
+                : 'The cost card is on screen. Do not read the numbers aloud unless asked. Then STOP and wait for her answer: do not call prefillForm or draw another card in this turn.',
     };
 }
