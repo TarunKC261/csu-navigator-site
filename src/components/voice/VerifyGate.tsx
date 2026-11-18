@@ -43,7 +43,6 @@ const STRINGS = dict({
         why: 'This keeps your record private if your link was forwarded or seen by someone else.',
         smsFrom: 'CSU Student Engagement Platform',
         smsBody: (code: string) => `Your CSU verification code is ${code}. It expires in 10 minutes.`,
-        smsTag: 'Simulated text message (demo). Nothing was sent.',
         now: 'now',
     },
     es: {
@@ -61,7 +60,6 @@ const STRINGS = dict({
         none: 'Todavía no hay ningún código que comprobar. Pide uno.',
         why: 'Esto protege tu expediente si alguien más recibió o vio tu enlace.',
         smsBody: (code: string) => `Tu código de verificación de CSU es ${code}. Caduca en 10 minutos.`,
-        smsTag: 'Mensaje de texto simulado (demostración). No se envió nada.',
         now: 'ahora',
     },
     tl: {
@@ -79,7 +77,6 @@ const STRINGS = dict({
         none: 'Wala pang code na masusuri. Humingi muna ng isa.',
         why: 'Pinoprotektahan nito ang rekord mo kung na-forward o nakita ng iba ang link mo.',
         smsBody: (code: string) => `Ang CSU verification code mo ay ${code}. Mag-e-expire ito sa loob ng 10 minuto.`,
-        smsTag: 'Simulated na text message (demo). Walang naipadala.',
         now: 'ngayon',
     },
     vi: {
@@ -97,7 +94,6 @@ const STRINGS = dict({
         none: 'Chưa có mã nào để kiểm tra. Bạn hãy xin một mã.',
         why: 'Điều này bảo vệ hồ sơ của bạn nếu đường liên kết bị chuyển tiếp hoặc người khác nhìn thấy.',
         smsBody: (code: string) => `Mã xác minh CSU của bạn là ${code}. Mã hết hạn sau 10 phút.`,
-        smsTag: 'Tin nhắn mô phỏng (demo). Không có gì được gửi.',
         now: 'bây giờ',
     },
     zh: {
@@ -115,7 +111,6 @@ const STRINGS = dict({
         none: '目前还没有可验证的验证码，请先获取一个。',
         why: '如果你的链接被转发或被别人看到，这一步可以保护你的记录。',
         smsBody: (code: string) => `你的 CSU 验证码是 ${code}，10 分钟内有效。`,
-        smsTag: '模拟短信（演示），并未真正发送。',
         now: '刚刚',
     },
     de: {
@@ -133,7 +128,6 @@ const STRINGS = dict({
         none: 'Es gibt noch keinen Code. Fordere einen an.',
         why: 'So bleibt dein Datensatz privat, falls dein Link weitergeleitet oder von anderen gesehen wurde.',
         smsBody: (code: string) => `Dein CSU-Bestätigungscode ist ${code}. Er läuft in 10 Minuten ab.`,
-        smsTag: 'Simulierte SMS (Demo). Es wurde nichts gesendet.',
         now: 'jetzt',
     },
 });
@@ -257,7 +251,6 @@ export function VerifyGate() {
                             <span className="ml-auto">{t.now}</span>
                         </div>
                         <p className="mt-1.5 text-[14px] leading-snug text-[var(--csu-ink)]">{t.smsBody(smsCode)}</p>
-                        <p className="mt-1.5 text-[10px] uppercase tracking-wider text-[var(--csu-ink-muted)]">{t.smsTag}</p>
                     </div>
                 )}
 
