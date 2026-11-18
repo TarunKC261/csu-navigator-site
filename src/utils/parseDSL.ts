@@ -63,7 +63,11 @@ export const DSL_SCHEMA: Record<string, { pipeCount: number; fields: string[] }>
     'callout':           { pipeCount: 4, fields: ['icon','value','label','body'] },
     'person-card':       { pipeCount: 6, fields: ['name','title','metric','metricLabel','status','detail'] },
     'relationship-card': { pipeCount: 8, fields: ['name','role','sentiment','trajectory','lastContact','daysSince','actionNeeded','riskLevel'] },
-    'incident-card':     { pipeCount: 5, fields: ['severity','title','summary','impact','resolution'] },
+    'incident-card':     { pipeCount: 13, fields: ['severity','title','summary','impact','resolution','number','state','priority','assignedTo','assignmentGroup','category','openedAt (optional — sys_created_on verbatim)','updatedAt (optional — sys_updated_on verbatim)','sysId (optional pos 14, from sys_id — renderScene-supplied, never model-written)'] },
+    'incident-draft':    { pipeCount: 11, fields: ['severity','title','summary','impact','resolution','number','state','priority','assignedTo','assignmentGroup','category','kb (optional, "kb=1" when self-service articles are available)'] },
+    'kb-suggestion':     { pipeCount: 5, fields: ['topTitle','topSummary','topUrl','steps (semicolon-separated)','extras (semicolon-separated `title^url` pairs — caret delimiter inside, since `|` would collide with the top-level row grammar)'] },
+    'resolve-page':      { pipeCount: 6, fields: ['problemTitle','detectedCategory','detectedDevice','helperText','sources (semicolon-separated)','results (semicolon-separated `source^badge^matchPercent^title^snippet^url` rows — caret delimiter inside, since `|` would collide with the top-level row grammar)'] },
+    'question-card':     { pipeCount: 4, fields: ['question','options','hint','field'] },
     'info-card':         { pipeCount: 5, fields: ['icon','title','body','cta','ctaPhrase'] },
     'country-card':      { pipeCount: 7, fields: ['country','flag','revenue','employees','politicalRisk','relationshipHealth','keyContact'] },
     // Container headers
@@ -114,6 +118,16 @@ export const DSL_SCHEMA: Record<string, { pipeCount: number; fields: string[] }>
     'crow':              { pipeCount: -1, fields: ['val1','val2','...'] },
     'heatmap':           { pipeCount: 2, fields: ['title','cols (semicolon-delimited)'] },
     'hrow':              { pipeCount: -1, fields: ['rowLabel','val1','val2','...'] },
+    // Product carousel (slider of LLM-curated product tiles)
+    'product-carousel':  { pipeCount: 1, fields: ['title'] },
+    'product':           { pipeCount: 9, fields: ['imageUrl','productName','price','originalPrice','discountLabel','colorOrVariant','ctaLabel','productUrl','badge'] },
+    'product-categories':{ pipeCount: 1, fields: ['title'] },
+    'category':          { pipeCount: 5, fields: ['title','summary','cta','price','imageUrl'] },
+    'product-detail':    { pipeCount: 10, fields: ['productName','price','originalPrice','discountLabel','ratingScore','ratingCount','mainImageUrl','productUrl','subtitle','breadcrumb'] },
+    'pd-thumb':          { pipeCount: 1, fields: ['imageUrl'] },
+    'pd-color':          { pipeCount: 3, fields: ['label','swatchHex','swatchUrl'] },
+    'pd-size':           { pipeCount: 1, fields: ['label'] },
+    'pd-perk':           { pipeCount: 4, fields: ['icon','title','detail','cta'] },
 };
 
 // ── Container → item prefix map ───────────────────────────────────────────────
@@ -141,6 +155,9 @@ const CONTAINER_ITEM_PREFIXES: Record<string, string> = {
     'table':             'trow',
     'comparison-table':  'crow',
     'heatmap':           'hrow',
+    'product-carousel':  'product',
+    'product-categories':'category',
+    'product-detail':    'pd-thumb', // primary item; pd-color / pd-size / pd-perk handled separately
 };
 
 const CONTAINER_TYPES   = new Set(Object.keys(CONTAINER_ITEM_PREFIXES));
@@ -148,6 +165,7 @@ const ALL_ITEM_PREFIXES = new Set(Object.values(CONTAINER_ITEM_PREFIXES));
 const FLAT_TYPES        = new Set([
     'stat', 'callout', 'person-card', 'relationship-card',
     'incident-card', 'info-card', 'country-card', 'image-card',
+    'incident-draft', 'kb-suggestion', 'resolve-page', 'question-card',
 ]);
 
 // ── Item parsers ──────────────────────────────────────────────────────────────
@@ -276,6 +294,46 @@ function parseItem(prefix: string, fields: string[]): Record<string, any> | null
             const [rowLabel, ...vals] = fields;
             return { rowLabel: n(rowLabel) ?? '', values: vals.map(v => f(v)) };
         }
+        case 'product': {
+            const [imageUrl, productName, price, originalPrice, discountLabel, colorOrVariant, ctaLabel, productUrl, badge] = fields;
+            return {
+                imageUrl: n(imageUrl),
+                productName: n(productName),
+                price: n(price),
+                originalPrice: n(originalPrice),
+                discountLabel: n(discountLabel),
+                colorOrVariant: n(colorOrVariant),
+                ctaLabel: n(ctaLabel),
+                productUrl: n(productUrl),
+                badge: n(badge),
+            };
+        }
+        case 'category': {
+            const [title, summary, cta, price, imageUrl] = fields;
+            return {
+                title: n(title),
+                summary: n(summary),
+                cta: n(cta),
+                price: n(price),
+                imageUrl: n(imageUrl),
+            };
+        }
+        case 'pd-thumb': {
+            const [imageUrl] = fields;
+            return { imageUrl: n(imageUrl) };
+        }
+        case 'pd-color': {
+            const [label, swatchHex, swatchUrl] = fields;
+            return { label: n(label) ?? '', swatchHex: n(swatchHex), swatchUrl: n(swatchUrl) };
+        }
+        case 'pd-size': {
+            const [label] = fields;
+            return { label: n(label) ?? '' };
+        }
+        case 'pd-perk': {
+            const [icon, title, detail, cta] = fields;
+            return { icon: n(icon), title: n(title) ?? '', detail: n(detail), cta: n(cta) };
+        }
         default:
             return null;
     }
@@ -306,8 +364,47 @@ function parseFlatCard(type: string, fields: string[], span?: 'full'): CardDef |
             return item;
         }
         case 'incident-card': {
-            const [severity, title, summary, impact, ...rest] = fields;
-            return Object.assign(card, { severity: n(severity) ?? 'info', title: n(title) ?? '', summary: n(summary), impact: n(impact), resolution: n(rest.join('|')) });
+            // Positions 12–14 are optional: openedAt (sys_created_on) and
+            // updatedAt (sys_updated_on) are written by the Show LLM for list
+            // scenes AND by renderScene from the tool row; sysId (pos 14) is
+            // renderScene-supplied only, never hand-written by the model.
+            // Older 11- or 13-field rows still parse — missing slots land
+            // undefined.
+            const [severity, title, summary, impact, resolution, number, state, priority, assignedTo, assignmentGroup, category, openedAt, updatedAt, sysId] = fields;
+            return Object.assign(card, { severity: n(severity) ?? 'info', title: n(title) ?? '', summary: n(summary), impact: n(impact), resolution: n(resolution), number: n(number), state: n(state), priority: n(priority), assignedTo: n(assignedTo), assignmentGroup: n(assignmentGroup), category: n(category), openedAt: n(openedAt), updatedAt: n(updatedAt), sysId: n(sysId) });
+        }
+        case 'incident-draft': {
+            const [severity, title, summary, impact, resolution, number, state, priority, assignedTo, assignmentGroup, category, kb] = fields;
+            // Optional 12th token: 'kb=1' (or just '1') signals that the speak agent's silent
+            // KB probe found usable self-service articles; the card renders an opt-in button.
+            const kbRaw = (n(kb) ?? '').toLowerCase();
+            const kbFlag = kbRaw === '1' || kbRaw === 'kb=1' || kbRaw === 'true' ? '1' : undefined;
+            return Object.assign(card, { severity: n(severity) ?? 'info', title: n(title) ?? '', summary: n(summary), impact: n(impact), resolution: n(resolution), number: n(number), state: n(state), priority: n(priority), assignedTo: n(assignedTo), assignmentGroup: n(assignmentGroup), category: n(category), kb: kbFlag });
+        }
+        case 'question-card': {
+            const [question, options, hint, field] = fields;
+            return Object.assign(card, { question: n(question) ?? '', options: n(options), hint: n(hint), field: n(field) });
+        }
+        case 'kb-suggestion': {
+            const [topTitle, topSummary, topUrl, steps, extras] = fields;
+            return Object.assign(card, {
+                topTitle: n(topTitle),
+                topSummary: n(topSummary),
+                topUrl: n(topUrl),
+                steps: n(steps),
+                extras: n(extras),
+            });
+        }
+        case 'resolve-page': {
+            const [problemTitle, detectedCategory, detectedDevice, helperText, sources, results] = fields;
+            return Object.assign(card, {
+                problemTitle: n(problemTitle),
+                detectedCategory: n(detectedCategory),
+                detectedDevice: n(detectedDevice),
+                helperText: n(helperText),
+                sources: n(sources),
+                results: n(results),
+            });
         }
         case 'info-card': {
             const [icon, title, body, cta, ctaPhrase] = fields;
@@ -339,6 +436,17 @@ interface ContainerMeta {
     consequence?: string;
     owner?: string;
     headers?: string[];  // table, comparison-table, heatmap column headers
+    // product-detail extras
+    productName?: string;
+    price?: string;
+    originalPrice?: string;
+    discountLabel?: string;
+    ratingScore?: number;
+    ratingCount?: number;
+    mainImageUrl?: string;
+    productUrl?: string;
+    subtitle?: string;
+    breadcrumb?: string;
 }
 
 function parseContainerHeader(type: string, fields: string[]): ContainerMeta {
@@ -370,6 +478,21 @@ function parseContainerHeader(type: string, fields: string[]): ContainerMeta {
         }
         case 'stacked-bar':
             return { title: n(fields[0]), unit: n(fields[1]) };
+        case 'product-detail': {
+            const [productName, price, originalPrice, discountLabel, ratingScore, ratingCount, mainImageUrl, productUrl, subtitle, breadcrumb] = fields;
+            return {
+                productName: n(productName),
+                price: n(price),
+                originalPrice: n(originalPrice),
+                discountLabel: n(discountLabel),
+                ratingScore: n(ratingScore) ? parseFloat(n(ratingScore)!) : undefined,
+                ratingCount: n(ratingCount) ? parseInt(n(ratingCount)!, 10) : undefined,
+                mainImageUrl: n(mainImageUrl),
+                productUrl: n(productUrl),
+                subtitle: n(subtitle),
+                breadcrumb: n(breadcrumb),
+            };
+        }
         default:
             return { title: n(fields[0]) };
     }
@@ -383,7 +506,7 @@ function flushContainer(
     span: 'full' | undefined,
     cards: CardDef[]
 ): void {
-    if (type !== 'kpi-strip' && items.length === 0) return;
+    if (type !== 'kpi-strip' && type !== 'product-detail' && items.length === 0) return;
     const card: CardDef = { type };
     if (span) card.span = span;
     if (meta.title) card.title = meta.title;
@@ -457,6 +580,48 @@ function flushContainer(
         case 'risk-matrix':
             card.risks = items;
             break;
+        case 'product-carousel':
+            card.items = items;
+            break;
+        case 'product-categories':
+            card.items = items;
+            break;
+        case 'product-detail': {
+            // Strip __pd tag from items into the right buckets
+            const thumbnails: string[] = [];
+            const colors: any[] = [];
+            const sizes: string[] = [];
+            const perks: any[] = [];
+            for (const it of items) {
+                const tag = (it as any).__pd as string | undefined;
+                if (tag === 'pd-thumb' && it.imageUrl) thumbnails.push(it.imageUrl);
+                else if (tag === 'pd-color') {
+                    const { __pd, ...rest } = it as any;
+                    colors.push(rest);
+                }
+                else if (tag === 'pd-size' && it.label) sizes.push(it.label);
+                else if (tag === 'pd-perk') {
+                    const { __pd, ...rest } = it as any;
+                    perks.push(rest);
+                }
+            }
+            // Header meta carries the rest of the props
+            if (meta.productName) card.productName = meta.productName;
+            if (meta.price) card.price = meta.price;
+            if (meta.originalPrice) card.originalPrice = meta.originalPrice;
+            if (meta.discountLabel) card.discountLabel = meta.discountLabel;
+            if (meta.ratingScore !== undefined) card.ratingScore = meta.ratingScore;
+            if (meta.ratingCount !== undefined) card.ratingCount = meta.ratingCount;
+            if (meta.mainImageUrl) card.mainImageUrl = meta.mainImageUrl;
+            if (meta.productUrl) card.productUrl = meta.productUrl;
+            if (meta.subtitle) card.subtitle = meta.subtitle;
+            if (meta.breadcrumb) card.breadcrumb = meta.breadcrumb;
+            if (thumbnails.length) card.thumbnails = thumbnails;
+            if (colors.length) card.colors = colors;
+            if (sizes.length) card.sizes = sizes;
+            if (perks.length) card.perks = perks;
+            break;
+        }
         case 'stacked-bar': {
             if (meta.unit) card.unit = meta.unit;
             // Group sbar items by their 'group' field → StackedGroup[]
@@ -574,6 +739,15 @@ export function parseDSL(raw: string): ParsedDSL {
             && CONTAINER_ITEM_PREFIXES[containerType] === prefix) {
             const item = parseItem(prefix, fields);
             if (item) containerItems.push(item);
+            continue;
+        }
+
+        // product-detail accepts multiple item prefix types (thumb/color/size/perk).
+        // Tag the parsed item with its prefix so the flusher can split them.
+        if (containerType === 'product-detail'
+            && (prefix === 'pd-thumb' || prefix === 'pd-color' || prefix === 'pd-size' || prefix === 'pd-perk')) {
+            const item = parseItem(prefix, fields);
+            if (item) containerItems.push({ __pd: prefix, ...item });
             continue;
         }
 

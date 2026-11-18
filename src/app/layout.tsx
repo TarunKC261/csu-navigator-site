@@ -1,19 +1,16 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { VoiceSessionProvider } from '@/components/voice/VoiceSessionProvider';
-import { BackgroundLayer } from '@/components/voice/BackgroundLayer';
-import { SceneLayout } from '@/components/voice/SceneLayout';
-import { ControlBar } from '@/components/voice/ControlBar';
-import { ChatPanel } from '@/components/voice/ChatPanel';
-import { AirVisionOverlay } from '@/components/voice/AirVisionOverlay';
-import { AnalyticsRelay } from '@/components/AnalyticsRelay';
-import { SiteBoot } from '@/components/shell/SiteBoot';
+import { AppShell } from '@/components/voice/AppShell';
+import { AuthGate } from '@/components/auth/AuthGate';
+import { ConsentGate } from '@/components/privacy/ConsentGate';
 
-const agentName = process.env.NEXT_PUBLIC_AGENT_NAME || 'AI Assistant';
+// Pinned (not NEXT_PUBLIC_AGENT_NAME from the dashboard) so the tab title and
+// link previews always read as the product, whatever the agent is called there.
+const agentName = 'CSU Navigator';
 
 export const metadata: Metadata = {
   title: agentName,
-  description: `Talk to ${agentName} - powered by Mobeus`,
+  description: `${agentName}: your guide from admission to the first day of class at the California State University.`,
 };
 
 export default function RootLayout({
@@ -24,6 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Runtime config FIRST, before any app code. Sets window.__DX_CONFIG__
+            from /public/config.js (editable on the host, no rebuild). Synchronous
+            on purpose so the values exist before the bundle runs. See
+            src/lib/runtime-config.ts. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/config.js" />
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
@@ -34,22 +37,20 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">
-        <AnalyticsRelay />
-        <SiteBoot />
-        <VoiceSessionProvider>
-          <BackgroundLayer />
-          <div id="scene-root" className="relative z-[2] lg:h-dvh">
-            <SceneLayout>{children}</SceneLayout>
-          </div>
-          <ControlBar />
-          <ChatPanel />
-          <AirVisionOverlay />
-        </VoiceSessionProvider>
+      <body className="antialiased" suppressHydrationWarning>
+        {/* Sign-in first (Unisys Entra SSO), then the consent notice, then the app.
+            The consent click happens in the same document that then plays the
+            avatar, which is what lets the greeting be heard, and it is the natural
+            place to request the microphone. */}
+        <AuthGate>
+          <ConsentGate>
+            <AppShell>{children}</AppShell>
+          </ConsentGate>
+        </AuthGate>
       </body>
     </html>
   );

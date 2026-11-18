@@ -17,7 +17,7 @@ import {
   MousePointerClick,
   Search,
   Wrench,
-} from 'lucide-react';
+} from '@/lib/icons';
 
 interface ToolCallIndicatorProps {
   toolName: string;

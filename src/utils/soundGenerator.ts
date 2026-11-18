@@ -98,6 +98,47 @@ export const playUISound = (type: 'on' | 'off', buttonType: 'chat' | 'mic' | 'av
 };
 
 // ============================================================
+// WAIT TONE
+// A single LONG C5 tone for the greeting warm-up hold. Same pitch and character
+// as the short connect/reconnect cue (playUISound('on','chat')) so it reads as
+// the familiar "getting ready" sound, just sustained (~0.5s) rather than a blip,
+// which is what the owner asked for while the greeting waits for HeyGen to warm.
+// ============================================================
+
+export const playWaitTone = (volumeMultiplier: number = 0.18): void => {
+  try {
+    const ctx = getUIAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const now = ctx.currentTime;
+    const vol = Math.max(0, Math.min(1, volumeMultiplier));
+    const base = 523.25; // C5, matching the 'chat' connect/reconnect cue
+    const dur = 0.5;     // "long" beep vs the 0.15s UI blips
+
+    [base, base * 1.25].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      // Soft attack, hold, gentle release, so it is a calm sustained note.
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.exponentialRampToValueAtTime(0.03 * vol, now + 0.04);
+      gain.gain.setValueAtTime(0.03 * vol, now + dur - 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + dur);
+    });
+  } catch {
+    // Sound playback failed silently
+  }
+};
+
+// ============================================================
 // GLASS CLICK SOUND
 // A gentle, floating chime for start interactions
 // ============================================================

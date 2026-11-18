@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Minimal SmartImage for the starter template.
- * The Small Lift version integrates with Mobeus AI for image generation.
+ * The Small Lift version integrates with AWS AI for image generation.
  * This version is a simple <img> wrapper — images are expected to be URLs.
  */
 interface SmartImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {

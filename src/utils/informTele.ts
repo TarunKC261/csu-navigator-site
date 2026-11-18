@@ -45,16 +45,10 @@ export function informTele(message: string): void {
   // Publish to data channel
   if (_room?.localParticipant) {
     try {
-      // Uint8Array.from() rather than passing encode()'s result straight
-      // through: livekit-client >= 2.20 types publishData as
-      // NonSharedUint8Array (= Uint8Array<ArrayBuffer>), while TextEncoder is
-      // Uint8Array<ArrayBufferLike> — which admits SharedArrayBuffer and so
-      // doesn't fit. This copy has exactly the narrowed type, and it compiles
-      // on every TypeScript version (pre-5.7 Uint8Array isn't generic at all).
-      const payload = Uint8Array.from(
-        new TextEncoder().encode(JSON.stringify({ message, timestamp: Date.now() })),
+      const payload = new TextEncoder().encode(
+        JSON.stringify({ message, timestamp: Date.now() }),
       );
-      _room.localParticipant.publishData(payload, { reliable: true, topic: 'tele:feedback' });
+      _room.localParticipant.publishData(payload as Uint8Array<ArrayBuffer>, { reliable: true, topic: 'tele:feedback' });
     } catch (error) {
       console.error('[informTele] Failed to publish:', error);
     }

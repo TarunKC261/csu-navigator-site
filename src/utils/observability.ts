@@ -1,3 +1,5 @@
+import { logEvent, type LogKind } from '@/lib/sessionLog';
+
 /**
  * Observability — Debug logging for voice agent interactions.
  *
@@ -36,7 +38,27 @@ const STYLES = {
 
 type Category = keyof typeof STYLES;
 
+/** Category to session-log kind. The buffer groups differently from the console
+ *  because it is read as a timeline, not skimmed by colour. */
+const KIND_OF: Record<Category, LogKind> = {
+  outbound: 'rpc',
+  inbound: 'rpc',
+  data: 'scene',
+  state: 'agent',
+  speech: 'speech',
+  lifecycle: 'lifecycle',
+  fn: 'rpc',
+};
+
 function log(category: Category, label: string, ...data: unknown[]) {
+  // ALWAYS record to the session-log ring buffer, before the console gate.
+  //
+  // This is the point of the whole refactor: everything here used to be behind
+  // `window.observability`, so nothing was captured unless someone had enabled
+  // it before the interesting event. A slow first connect can never be caught
+  // that way. The buffer is unconditional and capped; the console stays gated.
+  logEvent(KIND_OF[category], label, data.length === 1 ? data[0] : data.length ? data : undefined);
+
   if (!isEnabled()) return;
 
   const style = STYLES[category];
@@ -143,9 +165,20 @@ export function logConnectionStateChange(state: string) {
 
 // ── Transcription ──
 
+// De-dupe transcript lines. Review (chk4) called out "logs 2-3 times same
+// interim, final". Two causes: (1) each line ALSO dumped a data object echoing
+// the very text already in the label, so every entry read twice; (2) the STT
+// stream emits the same interim text repeatedly as it settles, so an unchanged
+// interim was logged again and again. Fix: no redundant data echo, and skip a
+// line identical to the one just logged for the same speaker.
 export function logTranscription(participant: 'user' | 'agent', text: string, isFinal: boolean) {
-  const tag = isFinal ? 'final' : 'interim';
-  log('speech', `${participant} [${tag}]: "${text.slice(0, 200)}${text.length > 200 ? '...' : ''}"`, { participant, text, isFinal });
+  // Interims are DROPPED. The STT stream emits the same sentence dozens of times
+  // as it settles, which filled the log with near-identical repeating lines and
+  // was itself per-event work during her speech. Only the FINAL of each utterance
+  // is recorded now; that plus the agent state transitions is what diagnosis
+  // needs. (Owner direction 2026-09-11.)
+  if (!isFinal) return;
+  log('speech', `${participant} [final]: "${text.slice(0, 200)}${text.length > 200 ? '...' : ''}"`);
 }
 
 // ── Lifecycle ──

@@ -1,50 +1,90 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mic, MicOff, MessageCircle, X, ArrowRight } from 'lucide-react';
+import { Mic, MicOff, MessageCircle, X, RefreshCw } from '@/lib/icons';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
-import { assets } from '@/assets';
+import { useLocale } from '@/lib/i18n/useLocale';
 import { playUISound, playGlassSound } from '@/utils/soundGenerator';
-import { AirVisionToggle } from '@/components/voice/AirVisionToggle';
 
-export function ControlBar() {
+// Control chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
+const CONTROL_STRINGS = {
+  en: { reconnect: 'Reconnect', reconnecting: 'Reconnecting…', muteMic: 'Mute mic', unmuteMic: 'Unmute mic', openChat: 'Open chat', closeChat: 'Close chat' },
+  de: { reconnect: 'Erneut verbinden', reconnecting: 'Erneute Verbindung…', muteMic: 'Mikrofon stummschalten', unmuteMic: 'Stummschaltung aufheben', openChat: 'Chat öffnen', closeChat: 'Chat schließen' },
+} as const;
+
+interface VoiceControlsProps {
+  className?: string;
+  /**
+   * Render the chat toggle. Defaults to FALSE: the chat icon is hidden as of
+   * 2026-09-02, and ChatPanel is deferred to a later phase. Pass true to bring
+   * it back when that phase lands, rather than editing this component.
+   */
+  showChat?: boolean;
+}
+
+/**
+ * ReconnectButton — the ONE reconnect control (owner 2026-10-02: don't reinvent
+ * the icon; reuse the strip's so any reconnect change is made in one place). Same
+ * glyph (RefreshCw), same `btn-coin` + `data-tone="reconnect"` look, same action
+ * (glass cue + connect). Used by the strip (VoiceControls) and the debug panel.
+ * The CALLER decides when to show it; this just renders the button + behaviour.
+ */
+export function ReconnectButton({ className = '' }: { className?: string }) {
+  const connect = useVoiceSessionStore((s) => s.connect);
+  const sessionState = useVoiceSessionStore((s) => s.sessionState);
+  const t = CONTROL_STRINGS[useLocale()];
+  const isConnecting = sessionState === 'connecting';
+  const handleConnect = () => {
+    playGlassSound();
+    void connect();
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleConnect}
+      className={`btn-coin ${className}`}
+      data-tone="reconnect"
+      disabled={isConnecting}
+      title={isConnecting ? t.reconnecting : t.reconnect}
+      aria-label={t.reconnect}
+      style={isConnecting ? { opacity: 0.5 } : undefined}
+    >
+      <RefreshCw className="h-4 w-4" strokeWidth={2.25} />
+    </button>
+  );
+}
+
+export function VoiceControls({ className = '', showChat = false }: VoiceControlsProps) {
+  const t = CONTROL_STRINGS[useLocale()];
   const sessionState = useVoiceSessionStore((s) => s.sessionState);
   const isMuted = useVoiceSessionStore((s) => s.isMuted);
   const isChatPanelOpen = useVoiceSessionStore((s) => s.isChatPanelOpen);
-  const sceneActive = useVoiceSessionStore((s) => s.sceneActive);
-  const theme = useVoiceSessionStore((s) => s.theme);
-  const connect = useVoiceSessionStore((s) => s.connect);
-  const disconnect = useVoiceSessionStore((s) => s.disconnect);
+  // connect() is now encapsulated in <ReconnectButton/>; VoiceControls just places it.
+  // disconnect() intentionally NOT bound here any more: the user-facing disconnect
+  // was removed (2026-09-18). It lives in the debug panel for testers now.
   const toggleMute = useVoiceSessionStore((s) => s.toggleMute);
   const toggleChatPanel = useVoiceSessionStore((s) => s.toggleChatPanel);
-  const avatarThumbnailUrl = useVoiceSessionStore((s) => s.avatarThumbnailUrl);
-  const avatarAssets = useVoiceSessionStore((s) => s.avatarAssets);
 
   const [showTalkButton, setShowTalkButton] = useState(false);
 
   const isConnected = sessionState === 'connected';
-  const isConnecting = sessionState === 'connecting';
+  // `isConnecting` was dropped with the CONNECTING button: the connecting state
+  // is now shown once, by EngagedLine over the avatar.
   const isIdle = sessionState === 'idle' || sessionState === 'error';
 
-  const isDark = theme === 'dark';
-  const iconColor = (!sceneActive || isDark) ? 'text-white/70 hover:text-white' : 'text-gray-600 hover:text-gray-900';
-  const iconBg = (!sceneActive || isDark) ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10';
+  // `iconBg` was deleted with the mic's bespoke classes: the mic and disconnect
+  // are `.btn-coin` now, so only the chat branch still needs a colour, and that
+  // branch is off by default.
+  const iconColor = 'text-[#1A1A1A] hover:text-[#1A1A1A]';
 
-  // Delay TALK button appearance by 2s. Reset happens in cleanup (when leaving
-  // idle) rather than synchronously in the effect body.
+  // Delay TALK button appearance by 2s
   useEffect(() => {
-    if (!isIdle) return;
-    const timer = setTimeout(() => setShowTalkButton(true), 2000);
-    return () => {
-      clearTimeout(timer);
-      setShowTalkButton(false);
-    };
+    if (isIdle) {
+      const timer = setTimeout(() => setShowTalkButton(true), 2000);
+      return () => clearTimeout(timer);
+    }
+    setShowTalkButton(false);
   }, [isIdle]);
-
-  const handleConnect = () => {
-    playGlassSound();
-    connect();
-  };
 
   const handleToggleChat = () => {
     playUISound(isChatPanelOpen ? 'off' : 'on', 'chat');
@@ -56,32 +96,22 @@ export function ControlBar() {
     toggleMute();
   };
 
-  const handleDisconnect = () => {
-    playUISound('off', 'avatar');
-    disconnect();
-  };
-
   // z-100 when chat open so icons float above chat panel (z-50)
   const zIndex = isChatPanelOpen ? 'z-[100]' : 'z-[60]';
 
   return (
-    <div className={`fixed top-4 right-4 md:top-6 md:right-8 ${zIndex} inline-flex items-center gap-2 sm:gap-3 transition-all duration-300 ease-in-out`}>
-
-      {/* AirVision touchless hand control (renders only when enabled for this site) */}
-      <AirVisionToggle iconColor={iconColor} iconBg={iconBg} />
+    <div className={`${className} ${zIndex} inline-flex items-center gap-2 sm:gap-3 transition-all duration-300 ease-in-out`}>
 
       {/* Chat toggle */}
-      {isConnected && (
+      {showChat && isConnected && (
         <button
           onClick={handleToggleChat}
-          className={`transition-all duration-300 ${
-            isChatPanelOpen
-              ? 'text-red-500 hover:text-red-400'
-              : `${iconColor}`
-          }`}
-          title={isChatPanelOpen ? 'Close chat' : 'Open chat'}
+          className="btn-coin"
+          data-tone={isChatPanelOpen ? 'muted' : undefined}
+          title={isChatPanelOpen ? t.closeChat : t.openChat}
+          aria-label={isChatPanelOpen ? t.closeChat : t.openChat}
         >
-          {isChatPanelOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+          {isChatPanelOpen ? <X className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
         </button>
       )}
 
@@ -89,68 +119,37 @@ export function ControlBar() {
       {isConnected && (
         <button
           onClick={handleToggleMute}
-          className={`p-2 rounded-full transition-all duration-200 ${
-            isMuted
-              ? 'text-red-500 hover:text-red-400'
-              : `${iconBg} ${iconColor}`
-          }`}
-          title={isMuted ? 'Unmute mic' : 'Mute mic'}
+          className="btn-coin"
+          data-tone={isMuted ? 'muted' : undefined}
+          title={isMuted ? t.unmuteMic : t.muteMic}
         >
           {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </button>
       )}
 
-      {/* TALK button (idle) */}
-      {isIdle && showTalkButton && (
-        <button
-          onClick={handleConnect}
-          className="start-button inline-flex items-center gap-2 rounded-none text-sm"
-        >
-          TALK <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      )}
+      {/* Reconnect (idle) — the session auto-connects on the privacy notice, so
+          this only appears after an explicit disconnect.
 
-      {/* Connecting indicator (pulsing button) */}
-      {isConnecting && (
-        <button
-          disabled
-          className="start-button inline-flex items-center gap-2 rounded-none text-sm opacity-80 connecting-pulse"
-        >
-          CONNECTING...
-        </button>
-      )}
+          A COIN, not the big red pill. Review (chk4): "RECONNECT button need not
+          be So big". It now matches the mic and disconnect coins in the same
+          strip; the round refresh glyph reads as reconnect and `title` keeps the
+          word for anyone unsure. `data-tone="reconnect"` tints it red so it still
+          stands out as the primary thing to do while offline. */}
+      {isIdle && showTalkButton && <ReconnectButton />}
 
-      {/* Disconnect */}
-      {isConnected && (
-        <button
-          onClick={handleDisconnect}
-          className="bg-red-600 text-white p-2.5 rounded-full hover:bg-red-500 transition-colors duration-300 shadow-lg shadow-red-600/30"
-          title="Disconnect"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
+      {/* Green connected COIN dropped 2026-09-18 (owner: "feels meaningless"). The
+          connected cue now lives as a green dot on the "Connected in X.Xs" line at
+          the bottom (see EngagedLine). The red X disconnect stays gone (debug only). */}
 
-      {/* Avatar thumbnail */}
-      <div
-        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
-          isConnecting
-            ? 'border-[rgba(45,64,89,0.6)] bg-[rgba(45,64,89,0.1)] animate-pulse'
-            : isConnected
-              ? 'border-[rgba(45,64,89,0.8)] shadow-lg'
-              : 'border-white/30 shadow-lg'
-        }`}
-        onClick={isIdle ? handleConnect : undefined}
-      >
-        <img
-          src={avatarAssets?.profileUrl || avatarThumbnailUrl || assets.avatarProfile}
-          alt="Avatar"
-          className={`w-full h-full object-cover rounded-full transition-all duration-300 ${
-            isIdle ? 'brightness-75 hover:brightness-100' :
-            isConnecting ? '' : 'brightness-125'
-          }`}
-        />
-      </div>
+      {/* Avatar thumbnail removed — user menu in header serves as identity. */}
     </div>
   );
 }
+
+export function ControlBar() {
+  return (
+    <VoiceControls className="fixed top-3 right-[14rem] md:top-3.5 md:right-[16rem] lg:right-[19rem]" />
+  );
+}
+
+/* Last updated: 2026-09-18 UTC+8 */

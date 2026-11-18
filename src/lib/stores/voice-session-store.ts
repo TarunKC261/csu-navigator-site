@@ -13,13 +13,71 @@ import {
 import { ComponentTemplate, SceneData } from '@/types';
 import { parseDSL } from '@/utils/parseDSL';
 import { setInformTeleRoom } from '@/utils/informTele';
-import type { AirVisionConfig } from '@/lib/airvision/config';
-import type { AirVisionStatus } from '@/lib/airvision/loop';
+import { logEvent, logSample } from '@/lib/sessionLog';
+import { armApproval, handleValidateToolCall, noteCreateResult } from '@/lib/draftApproval';
+import { AVATAR_GRACE_MS, RECONNECT_HANG_MS, GREETING_WARMUP_MS, GREETING_WARMUP_SETTLE_MS, AVATAR_NAME } from '@/lib/sessionConfig';
 import {
-  initialAirVisionConfig,
-  mergeDefaults,
-  type AirVisionDefaultsPayload,
-} from '@/lib/airvision/site-config';
+  maybeAutoRenderFromToolActivity,
+  markIncidentRendered,
+  extractIncidentDates,
+  lastRenderedIncident,
+  type IncidentDates,
+} from '@/site-functions/autoRenderIncident';
+import { maybePostCreateVerify } from '@/site-functions/postCreateVerify';
+import { noteUserLookup, noteCreateActivity, getIdentityEmail } from '@/site-functions/incidentIdentity';
+import { useCallsStore, callUserKey } from '@/lib/stores/calls-store';
+import { useAuthModeStore } from '@/lib/stores/auth-mode-store';
+import { config } from '@/lib/runtime-config';
+
+// CSU build: the Henkel ServiceNow helpers (incident list/absence watchdogs, the
+// self-service question-card fallback, incident auto-render, call capture) watch
+// the conversation for IT-ticket phrasing and inject cards or nudges. They would
+// misfire on Val's student conversations, so they are switched off here. The code
+// stays in place so the two builds remain easy to compare.
+const SERVICENOW_FEATURES = false;
+
+/**
+ * sessionBackend — 0.7.0 Phase 3 (owner 2026-11-05): which control plane the
+ * voice session is created against, chosen by the active auth MODE. Hosts/key
+ * come from runtime-config (host-editable config.js, build-env fallback).
+ *
+ *   aws-us        AWS host + {apiKey} in the body. UNCHANGED from pre-0.7.0.
+ *   unisys/henkel No widget key. The httpOnly `dx_session` login cookie (set by
+ *                 credentials-client) identifies the site, so the call goes to the
+ *                 same-origin nginx proxy (host '' => relative) WITH credentials, and
+ *                 the body carries no key. Mirrors the starter's keyless create.
+ *
+ * Exported so the provider-health check uses the SAME backend. Read via
+ * getState() (this runs inside a Zustand action, not a React component).
+ */
+export function sessionBackend(): { host: string; useKey: boolean; apiKey: string; credentials: RequestCredentials } {
+  const mode = useAuthModeStore.getState().mode;
+  if (mode === 'unisys-azure' || mode === 'henkel-azure') {
+    return {
+      host: config.unisysWidgetHost(),
+      useKey: false,
+      apiKey: '',
+      credentials: 'include',
+    };
+  }
+  return {
+    host: config.widgetHost(),
+    useKey: true,
+    apiKey: config.widgetApiKey(),
+    credentials: 'same-origin',
+  };
+}
+import {
+  noteIncidentToolActivity,
+  maybeNudgeListIntent,
+  maybeCorrectAbsenceClaim,
+} from '@/site-functions/incidentListWatchdog';
+import {
+  noteKbToolActivity,
+  noteUserProblem,
+  maybeCorrectKbAbsence,
+  maybeEnsureQuestionCard,
+} from '@/site-functions/selfServiceWatchdog';
 import {
   logTellAgent, logTellAgentResponse,
   logInformAgent, logInformAgentResponse,
@@ -32,13 +90,45 @@ import {
   logParticipantConnected, logParticipantDisconnected,
   logSessionConnected, logSessionDisconnected,
 } from '@/utils/observability';
-import { previewToken } from '@/lib/studio/preview';
 
-// Opened inside the dashboard's Studio, a session talks to the tele as the
-// draft has it; the token is what tells the platform so.
-function studioPreview(): { previewToken?: string } {
-  const token = previewToken();
-  return token ? { previewToken: token } : {};
+// tellAgent dedupe window (2026-09-28). Module-scoped, not store state, because
+// it is a transient guard against a double-fire, not something the UI renders or
+// persists. See the dedupe block in tellAgent for the reasoning.
+const TELL_AGENT_DEDUPE_MS = 1500;
+let lastTellAgentMessage = '';
+let lastTellAgentAt = 0;
+
+// Create-lock internals (2026-11-09). Module-scoped like the dedupe window:
+// transient guards, not rendered state. `_sawBusySinceCreate` ensures we only
+// release on a 'listening' that follows the agent actually working, not the
+// brief 'listening' that can precede the turn. The safety timer guarantees the
+// submit button never strands if no state change arrives. See draftApproval.ts.
+const CREATE_LOCK_SAFETY_MS = 20_000;
+let _createSafetyTimer: ReturnType<typeof setTimeout> | null = null;
+let _sawBusySinceCreate = false;
+
+// Client-side raw record dump (owner 2026-10-02). The client can't call SN directly,
+// but it DOES receive tool results on the tool-activity data channel (that is how
+// noteUserLookup / autoRender read rows). So the debug "Dump" arms a short window
+// here; while it is open, every tool-activity event that references the target INC
+// is logged WHOLE (logSample, untruncated) — the raw record, no agent cooperation
+// needed. requestRawDump() is called from the debug panel alongside the askAgent
+// that makes the agent fetch; the fetch's events land in this window.
+let rawDumpPendingUntil = 0;
+let rawDumpNumber = '';
+export function requestRawDump(incNumber: string): void {
+  rawDumpNumber = incNumber.trim().toUpperCase();
+  rawDumpPendingUntil = Date.now() + 25_000;
+}
+
+// Room-join timeline (owner 2026-10-02: show each joinee separately so a slow part
+// is obvious). Anchored when the browser connects to the room; each join/boot logs
+// its elapsed from that anchor, so "browser +0s, avatar +5.2s, agent +0.5s, agent
+// BOOTED +196.9s" reads at a glance. So many moving parts, and nothing works until
+// they're all in.
+let roomConnectedAt = 0;
+function joinElapsed(): string {
+  return roomConnectedAt ? `+${((Date.now() - roomConnectedAt) / 1000).toFixed(1)}s` : '+?';
 }
 
 // Agent state from LiveKit
@@ -75,13 +165,6 @@ export interface UIComponent {
   timestamp: Date;
 }
 
-// Curated avatar imagery from the platform's AvatarAsset catalog
-export interface AvatarAssets {
-  sceneUrl: string | null;
-  backgroundUrl: string | null;
-  profileUrl: string | null;
-}
-
 // Pre-warm data saved between prepare and activate
 interface PreWarmData {
   room: Room;
@@ -95,7 +178,6 @@ interface PreWarmData {
     volumeMuted: boolean;
     avatarAvailable: boolean;
     avatarThumbnailUrl: string | null;
-    avatarAssets: AvatarAssets | null;
   };
   agentName: string;
 }
@@ -106,24 +188,44 @@ interface VoiceSessionState {
   room: Room | null;
   sessionId: string | null;
   sessionState: SessionState;
+  // True while LiveKit is mid-reconnect (Reconnecting / SignalReconnecting).
+  // `sessionState` deliberately stays `connected` through a reconnect (all the
+  // connected-only logic must keep working if it recovers), so this is the
+  // separate flag the UI reads to stop reporting a healthy session over a room
+  // that is actually re-establishing. See the ConnectionStateChanged handler.
+  isReconnecting: boolean;
   error: string | null;
 
   // Pre-warm (invisible to UI — room connected in background)
   _preWarm: PreWarmData | null;
   _preWarmState: 'idle' | 'warming' | 'ready' | 'failed';
 
+  // Auto-greet guard — flips true once the acknowledge greeting has been sent
+  // for the current session, so it can never fire twice (scene changes, re-renders).
+  _greetingSpoken: boolean;
+
   // Agent
   agentName: string | null;
   currentAgentName: string | null;
   agentState: AgentState;
   agentParticipant: RemoteParticipant | null;
+  /** True from a Create click until the agent's turn ends (submit greyed, no
+   *  re-click). Released on return to 'listening', or a 20s safety timeout.
+   *  Browser-side half of the validateToolCall stopgap; see draftApproval.ts. */
+  createInFlight: boolean;
+  /** Epoch ms of the last time the LOCAL participant was an active speaker.
+   *  Null until the user has spoken. Read by the mic auto-mute; never carries
+   *  audio, only a timestamp. */
+  lastUserSpeechAt: number | null;
+  /** Display name for the personalised greeting, set once Auth0 resolves. */
+  greetingName: string | null;
+  setGreetingName: (name: string | null) => void;
 
   // Avatar state
   avatarEnabled: boolean;
   avatarVisible: boolean;
   avatarAvailable: boolean;
   avatarThumbnailUrl: string | null;
-  avatarAssets: AvatarAssets | null;
   avatarTogglePending: boolean;
   avatarVideoTrack: RemoteTrack | null;
   avatarAudioTrack: RemoteTrack | null;
@@ -140,6 +242,20 @@ interface VoiceSessionState {
   transcripts: TranscriptEntry[];
   // Tool activity events (separate from transcripts so they never get lost)
   toolActivity: TranscriptEntry[];
+  // INC number → ServiceNow created/updated timestamps, harvested from raw tool
+  // payloads. The incident-card DSL does carry optional updatedAt/sysId slots,
+  // but only when a caller fills them — the LLM's own renderScene calls usually
+  // don't — so GridView prefers the card's own value and falls back to this.
+  // Held in store state (not a module Map) so a tool event that lands AFTER the
+  // scene is set still re-renders the cards.
+  incidentDates: Record<string, IncidentDates>;
+
+  // INC number → comments the user added from the incident card this session.
+  // The backend never returns comments to the client (tool RESULTS don't reach
+  // us), so the card's own "Add comment" echo is the only record. Kept in the
+  // store (not component state) so it survives the card un/re-mounting when the
+  // same incident is reopened (owner 2026-10-05: "disappears when reopened").
+  incidentComments: Record<string, string[]>;
 
   // UI Components (from agent RPC)
   uiComponents: UIComponent[];
@@ -155,15 +271,6 @@ interface VoiceSessionState {
   // Chat panel state
   isChatPanelOpen: boolean;
 
-  // AirVision (touchless hand control)
-  airVisionAvailable: boolean;
-  airVisionConfig: AirVisionConfig;
-  airVisionActive: boolean;
-  airVisionStatus: AirVisionStatus;
-  airVisionError: string | null;
-  airVisionShowCamera: boolean;
-  airVisionCameraOpacity: number;
-
   // Theme
   theme: 'light' | 'dark';
 
@@ -174,32 +281,53 @@ interface VoiceSessionState {
   // Actions
   preWarm: () => Promise<void>;
   connect: () => Promise<void>;
+  // preConnect: warm the agent + avatar in the background (during privacy-notice
+  // reading) without greeting or forcing audio playback. Waits for pre-warm to
+  // be ready so it always takes connect()'s fast path.
+  preConnect: () => Promise<void>;
+  // resumeAudioPlayback: (re)invoke play() on the attached agent/avatar audio
+  // elements. MUST be called inside a user gesture (the acknowledge click) to
+  // satisfy browser autoplay policy.
+  resumeAudioPlayback: () => void;
+  // greetWhenReady: once acknowledged, wait until the agent (and avatar video,
+  // if the avatar is enabled) is ready, then speak the greeting exactly once.
+  greetWhenReady: () => Promise<void>;
   disconnect: () => Promise<void>;
+  /**
+   * Microphone preference chosen on the pre-session gate, Zoom style.
+   *
+   * null means "not chosen", in which case the dashboard default in
+   * `defaults.micMuted` wins, which is the behaviour that existed before.
+   * Once the gate has been through, this overrides it, so the user's choice on
+   * the entry screen is what actually happens on connect instead of being
+   * silently replaced by a server default.
+   */
+  micPreferenceMuted: boolean | null;
+  setMicPreferenceMuted: (muted: boolean | null) => void;
   toggleMute: () => void;
   toggleVolume: () => void;
   toggleAvatarVisible: () => void;
   toggleAvatarHard: () => Promise<void>;
   sendTextMessage: (text: string) => Promise<void>;
   toggleChatPanel: () => void;
-  // AirVision actions
-  setAirVisionAvailability: (payload: AirVisionDefaultsPayload | null | undefined) => void;
-  toggleAirVision: () => void;
-  setAirVisionActive: (active: boolean) => void;
-  setAirVisionStatus: (status: AirVisionStatus) => void;
-  setAirVisionError: (error: string | null) => void;
-  toggleAirVisionCamera: () => void;
-  setAirVisionCameraOpacity: (opacity: number) => void;
-  setAirVisionRenderer: (rendererId: string) => void;
   setOverlayExpanded: (expanded: boolean) => void;
   setOverlayVisible: (visible: boolean) => void;
   clearTranscripts: () => void;
   addUIComponent: (component: Omit<UIComponent, 'id' | 'timestamp'>) => void;
   removeUIComponent: (id: string) => void;
   clearUIComponents: () => void;
+  addIncidentComment: (incidentNumber: string, text: string) => void;
   submitForm: (templateId: string, formId: string, values: Record<string, unknown>) => Promise<void>;
 
   // Scene actions
   clearScene: () => void;
+  /** Show a placeholder card NOW for a user request, before the agent's renderScene
+   *  arrives (AT 2026-10-19: "proactively show the card AND Sara says something brief
+   *  that she started working"). Optionally speaks `say` (direct TTS) so the user
+   *  hears she's on it. renderScene clears the placeholder when the real scene lands;
+   *  a safety timeout clears it if the agent never renders, so a dead turn can't leave
+   *  a forever-placeholder. */
+  showPending: (layout?: string, say?: string) => void;
   navigateSceneBack: () => void;
   navigateSceneForward: () => void;
   tellAgent: (message: string) => Promise<{ success: boolean; error?: string } | null>;
@@ -208,48 +336,142 @@ interface VoiceSessionState {
   askAgent: (message: string) => Promise<{ success: boolean; error?: string } | null>;
   // agentSay: direct TTS — agent speaks exact phrase, no LLM, no chat context
   agentSay: (message: string) => Promise<{ success: boolean; error?: string } | null>;
-  // transferAgent: switch to a different agent in a multi-agent workflow
-  transferAgent: (
-    name: string,
-    options?: { preserveHistory?: boolean }
-  ) => Promise<{ ok: true; currentAgent: string } | { ok: false; error: string }>;
   // Snake_case aliases for coding-agent compatibility
   tell_agent: (message: string) => Promise<{ success: boolean; error?: string } | null>;
   inform_agent: (message: string) => Promise<{ success: boolean; error?: string } | null>;
   ask_agent: (message: string) => Promise<{ success: boolean; error?: string } | null>;
   agent_say: (message: string) => Promise<{ success: boolean; error?: string } | null>;
-  transfer_agent: (
-    name: string,
-    options?: { preserveHistory?: boolean }
-  ) => Promise<{ ok: true; currentAgent: string } | { ok: false; error: string }>;
+  /** Engage the create lock + arm one approval. `ownedArgs` are the page-owned fields
+   *  merged into the create on allow (page-owns). Returns false if a create is already
+   *  in flight (caller should NOT send). See draftApproval.ts. */
+  beginCreateLock: (shortDesc: string, ownedArgs?: Record<string, unknown>) => boolean;
+  /** Release the create lock (re-enables submit). Idempotent. */
+  endCreateLock: (reason: string) => void;
 }
 
 const AGENT_STATE_ATTRIBUTE = 'lk.agent.state';
-const AGENT_NAME_ATTRIBUTE = 'lk.agent.name';
 
-// AirVision availability comes entirely from the widget-session `defaults.airVision`
-// payload (applied via setAirVisionAvailability). This is just the pre-runtime config.
-const AIR_VISION_INITIAL_CONFIG = initialAirVisionConfig();
+// AVATAR_GRACE_MS now lives in sessionConfig with the other session timings, so
+// there is one file to tune. Imported below with the rest of that config.
+
+// Scene history is capped: every renderScene/setScene push added the previous
+// scene forever, and duplicate renders of the same answer (Speak renderScene +
+// Show LLM + auto-render) pushed duplicates — unbounded memory growth and a
+// Back button that stepped through phantom re-renders. 25 back-steps is far
+// beyond any real session's use of Back. Exported for the renderScene site
+// function, which pushes history through the same contract.
+export const SCENE_HISTORY_MAX = 25;
+
+/**
+ * The greeting, built per session rather than a fixed constant.
+ *
+ * Personalised on request: the signed-in name, the user's local time of day, a
+ * self-introduction and an offer of help. The name is set by IdentityAgentSync
+ * once the Auth0 profile resolves; with no name it degrades to a plain hello
+ * rather than saying "Hello undefined".
+ *
+ * Was a fixed `GREETING_TEXT` const. Kept exported under the old name for any
+ * caller that still wants the impersonal form.
+ */
+function partOfDay(): string {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+
+// CSU: two tails. With a demo persona configured (config.js GREETING_NAME, e.g.
+// 'Maria') the greeting opens her story exactly as the Val prompt expects; with
+// none, a general welcome for whoever signed in.
+const GREETING_TAIL_PERSONA =
+  "your CSU Navigator. Two things could hold up your start at Fullerton, and both are fixable today. Want to start with your financial aid?";
+const GREETING_TAIL_GENERAL =
+  "your CSU Navigator. I can help with financial aid, orientation, your classes and campus life. What would you like to start with?";
+function greetingTail(): string {
+  try {
+    return config.greetingName() ? GREETING_TAIL_PERSONA : GREETING_TAIL_GENERAL;
+  } catch {
+    return GREETING_TAIL_GENERAL;
+  }
+}
+
+/**
+ * WARM-UP line (Option B, 2026-09-16). The nameless time-of-day greeting, spoken
+ * FIRST to warm HeyGen's cold TTS render so the first-word chop lands here, on a
+ * throwaway, rather than on the user's name. See GREETING_WARMUP_MS for the data.
+ */
+export function buildGreetingWarmup(): string {
+  return `${partOfDay()}.`;
+}
+
+/**
+ * BODY, spoken after the warm-up line. Starts with the user's name (now warm) and
+ * introduces Sarah (renamed from Katya, owner direction 2026-09-16; the accent
+ * itself is a HeyGen voice setting, server-side, not set here).
+ */
+export function buildGreetingBody(name?: string | null): string {
+  const who = name ? `Hi ${name}.` : 'Hi.';
+  return `${who} I'm ${AVATAR_NAME}, ${greetingTail()}`;
+}
+
+/**
+ * Single-utterance form, kept for the askAgent fallback and any other caller that
+ * wants the whole greeting in one string.
+ */
+export function buildGreeting(name?: string | null): string {
+  const who = name ? `${partOfDay()}, ${name}` : partOfDay();
+  return `${who}. I'm ${AVATAR_NAME}, ${greetingTail()}`;
+}
+
+export const GREETING_TEXT = buildGreeting(null);
+
+/* GREETING_READY_TIMEOUT_MS and GREETING_POLL_INTERVAL_MS were DELETED
+   2026-09-03. They were a 12 second deadline and a 150ms poll, and both were
+   the wrong mechanism: readiness is an event (the agent's `lk.agent.state`
+   leaving `initializing`), not something to sample on a stopwatch. The deadline
+   also started at the acknowledge click rather than at connect, which is what
+   made the failure boundary look like an unpredictable ~30 seconds. greetWhenReady
+   now subscribes to the store and has no deadline. */
+
+// Module-level in-flight guard so overlapping calls to greetWhenReady (e.g. a
+// double click) can't start two readiness watchers. The store's _greetingSpoken
+// flag is the durable once-per-session guard; this covers the race window
+// before the first agentSay resolves.
+let _greetingInFlight = false;
+
+// Masked-reconnect watchdog. Set while LiveKit is mid-reconnect; if it does not
+// clear (session back to `connected`) within RECONNECT_HANG_MS, the timer forces
+// an honest teardown. Module-level so a re-render cannot lose it.
+let _pendingSceneTimer: ReturnType<typeof setTimeout> | null = null;
+let _reconnectWatchdog: ReturnType<typeof setTimeout> | null = null;
+function clearReconnectWatchdog() {
+  if (_reconnectWatchdog !== null) {
+    clearTimeout(_reconnectWatchdog);
+    _reconnectWatchdog = null;
+  }
+}
 
 export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
   // Initial state
   room: null,
   sessionId: null,
   sessionState: 'idle',
+  isReconnecting: false,
   error: null,
   _preWarm: null,
   _preWarmState: 'idle',
+  _greetingSpoken: false,
   agentName: null,
   currentAgentName: null,
   agentState: 'initializing',
+  createInFlight: false,
   agentParticipant: null,
+  lastUserSpeechAt: null,
+  greetingName: null,
 
   // Avatar state
   avatarEnabled: false,
   avatarVisible: true,
   avatarAvailable: false,
   avatarThumbnailUrl: null,
-  avatarAssets: null,
   avatarTogglePending: false,
   avatarVideoTrack: null,
   avatarAudioTrack: null,
@@ -262,6 +484,8 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
   isVolumeMuted: false,
   transcripts: [],
   toolActivity: [],
+  incidentDates: {},
+  incidentComments: {},
   uiComponents: [],
   templates: [],
 
@@ -274,15 +498,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
   // Chat panel
   isChatPanelOpen: false,
-
-  // AirVision
-  airVisionAvailable: false,
-  airVisionConfig: AIR_VISION_INITIAL_CONFIG,
-  airVisionActive: false,
-  airVisionStatus: 'idle',
-  airVisionError: null,
-  airVisionShowCamera: false,
-  airVisionCameraOpacity: 0.5,
+  micPreferenceMuted: null,
 
   // Theme
   theme: 'dark',
@@ -302,19 +518,22 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     set({ _preWarmState: 'warming' });
 
     try {
-      const widgetHost = process.env.NEXT_PUBLIC_WIDGET_HOST || 'https://app.mobeus.ai';
-      const apiKey = process.env.NEXT_PUBLIC_WIDGET_API_KEY || '';
+      const be = sessionBackend();
+      const widgetHost = be.host;
+      const apiKey = be.apiKey;
 
-      if (!apiKey) {
+      if (be.useKey && !apiKey) {
         set({ _preWarmState: 'failed' });
         return;
       }
 
-      // Call prepare endpoint — creates room, returns token (no agent dispatch)
+      // Call prepare endpoint - creates room, returns token (no agent dispatch)
+      logEvent('network', 'POST /api/widget/session/prepare - request');
       const response = await fetch(`${widgetHost}/api/widget/session/prepare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, ...studioPreview() }),
+        credentials: be.credentials,
+        body: JSON.stringify(be.useKey ? { apiKey } : {}),
       });
 
       if (!response.ok) {
@@ -324,16 +543,33 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       }
 
       const sessionData = await response.json();
+      logEvent('network', 'POST /api/widget/session/prepare - response', { room: sessionData.roomName });
 
       const defaults = sessionData.defaults || {};
-
-      // Refine AirVision availability from per-site config (runtime path).
-      get().setAirVisionAvailability(defaults.airVision);
+      // WHICH avatar ran. The participant identity is always the generic
+      // "liveavatar-avatar-agent", so this URL is the only runtime evidence
+      // that distinguishes one configured avatar from another. Needed to test
+      // whether a different avatar boots faster or stops getting stuck; the
+      // client cannot SELECT an avatar (every request body is just the API
+      // key), so this is the only handle a capture has on it.
+      logEvent('media', 'avatar identity for this session', {
+        avatarAvailable: Boolean(defaults.avatarAvailable),
+        avatarEnabled: Boolean(defaults.avatarEnabled),
+        thumbnailUrl: defaults.avatarThumbnailUrl || null,
+        agentName: sessionData.agent?.name ?? null,
+      });
 
       // Create room and connect (WebRTC handshake happens here)
       const room = new Room({
         adaptiveStream: true,
         dynacast: true,
+        // 2026-09-18: FALSE (default is true). Otherwise the SDK auto-disconnects the
+        // room on `pagehide`, which the browser fires when the native "Leave site?"
+        // dialog appears (tab close / Ctrl+F4). Cancelling the dialog then left the
+        // user OFFLINE because the room was already gone. With this off, WE own
+        // teardown via the gated pagehide handler, so a cancelled close keeps the
+        // session. (Ctrl+R was already fine: intercepted before any unload.)
+        disconnectOnPageLeave: false,
         audioCaptureDefaults: {
           autoGainControl: true,
           echoCancellation: true,
@@ -344,8 +580,10 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       // Set up event listeners early so they're ready when agent joins
       setupRoomEventListeners(room, set, get);
 
-      // Connect to room — this is the WebRTC warm-up
+      // Connect to room - this is the WebRTC warm-up
+      logEvent('network', 'prewarm room.connect - start');
       await room.connect(sessionData.wsUrl || sessionData.livekitUrl, sessionData.token);
+      logEvent('network', 'prewarm room.connect - done (WebRTC warm)');
 
       // Do NOT enable mic yet (avoids browser permission prompt)
       // Do NOT register RPC handlers yet (agent not present)
@@ -374,17 +612,13 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
             volumeMuted: typeof defaults.volumeMuted === 'boolean' ? defaults.volumeMuted : false,
             avatarAvailable: Boolean(defaults.avatarAvailable),
             avatarThumbnailUrl: defaults.avatarThumbnailUrl || null,
-            avatarAssets: defaults.avatarAssets || null,
           },
           agentName: sessionData.agent?.name || 'AI Assistant',
         },
         _preWarmState: 'ready',
-        // Show the tele's own scene behind the welcome page as soon as it is
-        // known, rather than the template's stock hero until someone connects.
-        // Only when the site lets the avatar run at all.
-        ...(defaults.avatarAvailable
-          ? { avatarThumbnailUrl: defaults.avatarThumbnailUrl || null, avatarAssets: defaults.avatarAssets || null }
-          : {}),
+        // Surface the platform avatar thumbnail pre-connect so BackgroundLayer
+        // shows the live-feed framing instead of the local fallback PNG.
+        avatarThumbnailUrl: defaults.avatarThumbnailUrl || null,
       });
     } catch (err) {
       console.warn('Pre-warm failed (will fall back to normal flow):', err);
@@ -406,22 +640,32 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       await existingRoom.disconnect();
     }
 
+    // Fresh session → re-arm the one-shot greeting guard and drop any stale
+    // reconnect state/watchdog from a previous session.
+    _greetingInFlight = false;
+    clearReconnectWatchdog();
+
     set({
       sessionState: 'connecting',
+      isReconnecting: false,
       error: null,
+      _greetingSpoken: false,
       transcripts: [],
       toolActivity: [],
+      incidentDates: {},
+      incidentComments: {},
       uiComponents: [],
       templates: [],
       agentState: 'initializing',
       agentName: null,
       currentAgentName: null,
-      // Reset scene state
-      currentScene: null,
-      sceneHistory: [],
-      sceneFuture: [],
-      sceneActive: false,
-      skeletonLayout: null,
+      // Scene state is DELIBERATELY NOT reset here (AT 2026-10-16, #10). connect()
+      // runs on a RECONNECT too, and wiping the scene sent the user back to Home,
+      // losing the card they were on (e.g. a Create-incident draft). A genuinely
+      // fresh start already has a null scene — End Session reloads the page, and a
+      // first page load starts null — so the ONLY time a non-null scene reaches
+      // connect() is a reconnect, which is exactly what we want to preserve.
+      // (currentScene / sceneHistory / sceneFuture / sceneActive / skeletonLayout kept.)
       // Reset avatar state
       avatarEnabled: false,
       avatarVisible: true,
@@ -437,10 +681,11 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     });
 
     try {
-      const widgetHost = process.env.NEXT_PUBLIC_WIDGET_HOST || 'https://app.mobeus.ai';
-      const apiKey = process.env.NEXT_PUBLIC_WIDGET_API_KEY || '';
+      const be = sessionBackend();
+      const widgetHost = be.host;
+      const apiKey = be.apiKey;
 
-      if (!apiKey) {
+      if (be.useKey && !apiKey) {
         throw new Error('Widget API key not configured');
       }
 
@@ -459,9 +704,8 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
           avatarVisible: defaultAvatarVisible,
           avatarAvailable,
           avatarThumbnailUrl: defaults.avatarThumbnailUrl || null,
-          avatarAssets: defaults.avatarAssets || null,
           avatarTogglePending: false,
-          isMuted: defaults.micMuted,
+          isMuted: get().micPreferenceMuted ?? defaults.micMuted,
           isVolumeMuted: defaults.volumeMuted,
           agentName,
           currentAgentName: agentName,
@@ -469,48 +713,42 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         });
 
         // Dispatch agent to the pre-warmed room
+        logEvent('network', 'POST /api/widget/session/activate - request (dispatch agent)');
         const activateResponse = await fetch(`${widgetHost}/api/widget/session/activate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey, roomName, ...studioPreview() }),
+          credentials: be.credentials,
+          body: JSON.stringify(be.useKey ? { apiKey, roomName } : { roomName }),
         });
 
-        if (activateResponse.ok) {
-          // Enable microphone (triggers browser permission prompt NOW)
-          await room.localParticipant.setMicrophoneEnabled(!defaults.micMuted);
-
-          // Register RPC handlers (agent is about to join)
-          registerRpcHandlers(room, set, get);
-
-          set({
-            room,
-            sessionId,
-            sessionState: 'connected',
-            _preWarm: null,
-            _preWarmState: 'idle',
-          });
-          logSessionConnected(sessionId, roomName);
-          applyAudioRouting(get);
-
-          return;
-        }
-
-        // The pre-warmed room can be gone by the time the user clicks Start
-        // (reaped as abandoned, or expired) — activate then 404s. Drop the
-        // stale room and fall through to the standard flow below instead of
-        // failing the connect over a room the user never saw. Only 404:
-        // anything else (402 credits, 403, 5xx) is a real answer that must
-        // not be masked by silently starting a second session.
-        const errData = await activateResponse.json().catch(() => ({}));
-        if (activateResponse.status !== 404) {
+        if (!activateResponse.ok) {
+          const errData = await activateResponse.json().catch(() => ({}));
           throw new Error(errData.error || 'Failed to activate session');
         }
-        console.warn('Pre-warmed room is gone, falling back to standard flow');
-        // Detach listeners first: the Disconnected handler blanket-resets the
-        // store (room null, sessionState idle) and would race the new room.
-        room.removeAllListeners();
-        try { await room.disconnect(); } catch {}
-        set({ _preWarm: null, _preWarmState: 'idle' });
+
+        logEvent('network', 'POST /api/widget/session/activate - response');
+
+        // Enable microphone (triggers browser permission prompt NOW)
+        // The gate's choice wins over the dashboard default when one was made.
+        const wantMuted = get().micPreferenceMuted ?? defaults.micMuted;
+        logEvent('media', `setMicrophoneEnabled - start (muted=${wantMuted})`);
+        await room.localParticipant.setMicrophoneEnabled(!wantMuted);
+        logEvent('media', 'setMicrophoneEnabled - done');
+
+        // Register RPC handlers (agent is about to join)
+        registerRpcHandlers(room, set, get);
+
+        set({
+          room,
+          sessionId,
+          sessionState: 'connected',
+          _preWarm: null,
+          _preWarmState: 'idle',
+        });
+        logSessionConnected(sessionId, roomName);
+        applyAudioRouting(get);
+
+        return;
       }
 
       // ── Slow path: fallback (no pre-warm or pre-warm failed) ──
@@ -523,10 +761,12 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       set({ _preWarm: null, _preWarmState: 'idle' });
 
       // Create session via widget API (original flow: room + agent dispatch together)
+      logEvent('network', 'POST /api/widget/session - request (SLOW path, no prewarm)');
       const response = await fetch(`${widgetHost}/api/widget/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, ...studioPreview() }),
+        credentials: be.credentials,
+        body: JSON.stringify(be.useKey ? { apiKey } : {}),
       });
 
       if (!response.ok) {
@@ -538,10 +778,14 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
       // API response: { agent: { name }, defaults: { avatarEnabled, avatarVisible, micMuted, volumeMuted, avatarAvailable }, ... }
       const defaults = sessionData.defaults || {};
-
-      // Refine AirVision availability from per-site config (runtime path).
-      get().setAirVisionAvailability(defaults.airVision);
-
+      // Same avatar identity line on the slow path, so a capture identifies the
+      // avatar regardless of which connect route was taken.
+      logEvent('media', 'avatar identity for this session (slow path)', {
+        avatarAvailable: Boolean(defaults.avatarAvailable),
+        avatarEnabled: Boolean(defaults.avatarEnabled),
+        thumbnailUrl: defaults.avatarThumbnailUrl || null,
+        agentName: sessionData.agent?.name ?? null,
+      });
       const avatarAvailable = Boolean(defaults.avatarAvailable);
       const rawAvatarEnabled =
         typeof defaults.avatarEnabled === 'boolean'
@@ -564,9 +808,8 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         avatarVisible: defaultAvatarVisible,
         avatarAvailable,
         avatarThumbnailUrl: defaults.avatarThumbnailUrl || null,
-        avatarAssets: defaults.avatarAssets || null,
         avatarTogglePending: false,
-        isMuted: defaultMicMuted,
+        isMuted: get().micPreferenceMuted ?? defaultMicMuted,
         isVolumeMuted: defaultVolumeMuted,
         agentName: resolvedAgentName,
         currentAgentName: resolvedAgentName,
@@ -583,6 +826,9 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       const room = new Room({
         adaptiveStream: true,
         dynacast: true,
+        // FALSE, same reason as the prewarm Room above (2026-09-18): don't let the
+        // SDK drop the room on pagehide / the native close dialog; we own teardown.
+        disconnectOnPageLeave: false,
         audioCaptureDefaults: {
           autoGainControl: true,
           echoCancellation: true,
@@ -597,7 +843,10 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       await room.connect(sessionData.wsUrl || sessionData.livekitUrl, sessionData.token);
 
       // Enable microphone
-      await room.localParticipant.setMicrophoneEnabled(!defaultMicMuted);
+      const wantMutedSlow = get().micPreferenceMuted ?? defaultMicMuted;
+      logEvent('media', `setMicrophoneEnabled - start (muted=${wantMutedSlow}, slow path)`);
+      await room.localParticipant.setMicrophoneEnabled(!wantMutedSlow);
+      logEvent('media', 'setMicrophoneEnabled - done');
 
       // Register RPC handlers for agent UI control
       registerRpcHandlers(room, set, get);
@@ -622,6 +871,274 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     }
   },
 
+  // preConnect: background warm-up while the privacy notice is on screen.
+  // Waits (briefly) for pre-warm to be ready so connect() takes the fast path,
+  // then connects — dispatching the agent + HeyGen avatar so they spin up while
+  // the user reads. No greeting is spoken and no audio is forced here; that all
+  // happens on the acknowledge gesture via resumeAudioPlayback + greetWhenReady.
+  preConnect: async () => {
+    const { sessionState } = get();
+    if (sessionState !== 'idle' && sessionState !== 'error') return;
+
+    // Give pre-warm a moment to finish its background WebRTC handshake so
+    // connect() uses the fast path (activate) instead of the slow path
+    // (a second full session). Bail out to connect() anyway on timeout or
+    // if pre-warm failed — the slow path is a valid fallback.
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const st = get()._preWarmState;
+      if (st === 'ready' || st === 'failed') break;
+      // Kick off pre-warm if it hasn't started yet (idle).
+      if (st === 'idle') void get().preWarm();
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    // Re-check: the user may have connected/disconnected during the wait.
+    if (get().sessionState !== 'idle' && get().sessionState !== 'error') return;
+    await get().connect();
+  },
+
+  // resumeAudioPlayback: retry play() on the attached audio elements. Called
+  // from inside the acknowledge click so the user gesture unblocks autoplay —
+  // any element whose initial autoplay was blocked (subscribed before the
+  // gesture) starts here, and the page gains user-activation for later tracks.
+  resumeAudioPlayback: () => {
+    const { agentAudioElement, avatarAudioElement } = get();
+    agentAudioElement?.play().catch(() => {});
+    avatarAudioElement?.play().catch(() => {});
+  },
+
+  setGreetingName: (name) => set({ greetingName: name }),
+
+  // greetWhenReady: speak the greeting exactly once, as soon as the agent is
+  // genuinely READY. Rewritten 2026-09-03.
+  //
+  // What was wrong, from the timer analysis:
+  //
+  //  1. READINESS WAS THE WRONG TEST. It waited for `agentParticipant` to be
+  //     non-null, but the agent joins the room several hundred ms before it
+  //     registers its `agentSay`/`askAgent` RPC methods. Presence is not
+  //     readiness, so the greeting fired into a void. The three console errors
+  //     seen live (agentSay 1113, askAgent 1085, then 712) were that RPC path
+  //     failing, not the presence path.
+  //  2. IT WAS A STOPWATCH, AND IT STARTED ON THE WRONG EVENT. A 12 second
+  //     deadline that began at the acknowledge CLICK, so the real budget was
+  //     12s plus however long the notice was read. That is the ~30s boundary
+  //     that looked non-deterministic.
+  //  3. FAILURE WAS TERMINAL. One caller, so nothing ever retried.
+  //
+  // Now: gate on AGENT STATE leaving `initializing` (the agent publishes
+  // `lk.agent.state`, and `updateAgentStateFromAttributes` already tracks it),
+  // subscribe rather than poll, and no deadline at all. The guards
+  // `_greetingSpoken` / `_greetingInFlight` are kept.
+  greetWhenReady: async () => {
+    if (get()._greetingSpoken || _greetingInFlight) return;
+    _greetingInFlight = true;
+
+    /**
+     * Readiness = the agent has finished initializing AND, when an avatar is
+     * expected, its AUDIO track is actually subscribed.
+     *
+     * The avatar wait was previously removed on the grounds that "HeyGen
+     * startup is the slowest link in the chain". That was wrong, and the
+     * session log of 2026-09-03 disproved it:
+     *
+     *   agent ready  ->  avatar worker joins       0.6s to 2.6s
+     *   worker joins ->  audio track subscribed    0.27s to 0.38s
+     *   agent boot, which we already wait through  1.54s to 39.21s
+     *
+     * The 30-odd seconds is the AGENT booting, not the avatar. Waiting for the
+     * avatar costs one to three seconds. Skipping it meant `agentSay` fired
+     * before the channel that carries her voice existed, so the opening words
+     * played into a track nobody was subscribed to yet. Measured live: at
+     * 3179.957s the greeting was sent, she began speaking at 3181.798s, and the
+     * avatar audio track only subscribed at 3182.516s. That 0.72s is the
+     * clipped "Good evening, Test..." heard in testing.
+     *
+     * AVATAR_GRACE_MS bounds it, so a genuinely broken or disabled avatar
+     * degrades to voice-only rather than to silence. That was the original
+     * design's fallback and it was correct.
+     */
+    const avatarExpected = () => {
+      const { avatarAvailable, avatarEnabled } = get();
+      return avatarAvailable && avatarEnabled;
+    };
+
+    const agentReady = () => {
+      const { agentParticipant, agentState } = get();
+      return !!agentParticipant && agentState !== "initializing";
+    };
+
+    const isReady = () => {
+      if (!agentReady()) return false;
+      // The avatar carries her voice. Video is not required: it affects lip
+      // sync, not audibility, and holding for it buys nothing extra.
+      if (avatarExpected() && !get().avatarAudioTrack) return false;
+      return true;
+    };
+
+    try {
+      if (!isReady()) {
+        logEvent("agent", "greet: waiting for readiness (agent state, then avatar audio)");
+        await new Promise<void>((resolve) => {
+          let settled = false;
+          const done = (why: string) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(graceTimer);
+            unsub();
+            logEvent("agent", `greet: readiness satisfied (${why})`);
+            resolve();
+          };
+
+          // No deadline on the AGENT. A store subscription costs nothing while
+          // idle, the disconnect handler clears `_greetingInFlight`, and the
+          // agent is the one thing without which nothing can be said at all.
+          const unsub = useVoiceSessionStore.subscribe(() => {
+            if (isReady()) done("agent ready and avatar audio subscribed");
+          });
+
+          // The AVATAR does get a deadline. Once the agent is ready we will
+          // wait a short grace for its audio track, then greet anyway rather
+          // than stay silent because a HeyGen worker never turned up.
+          let graceTimer: ReturnType<typeof setTimeout> = setTimeout(function tick() {
+            if (!agentReady()) {
+              graceTimer = setTimeout(tick, 250);
+              return;
+            }
+            graceTimer = setTimeout(() => {
+              if (isReady()) return done("agent ready and avatar audio subscribed");
+              done(`avatar audio did not arrive within ${AVATAR_GRACE_MS}ms, greeting voice-only`);
+            }, AVATAR_GRACE_MS);
+          }, 250);
+        });
+      }
+
+      if (get()._greetingSpoken) return;
+
+      // Two-part greeting (Option B, 2026-09-16, owner-chosen). HeyGen's TTS
+      // render is cold on the session's FIRST utterance, so the first word (the
+      // user's name) was clipped ("Good afternoon, Chri... stian"). A silent
+      // pre-delay did NOT fix it: the 16Sep log showed the hold ran but avatar
+      // audio still started ~2.7s after the agentSay and the name still chopped,
+      // because the render warms only once TEXT is sent. So speak a short
+      // NAMELESS warm-up line first to warm the render, wait for it to finish,
+      // then speak the named body from a warm pipeline, so the cold chop lands on
+      // the throwaway line. Reconnects do not run greetWhenReady, so they are
+      // unaffected. The warm-up agentSay result is not checked: if the RPC is
+      // unregistered the body's own askAgent fallback below still delivers.
+      logEvent("agent", "greet: speaking warm-up line (throwaway, warms HeyGen render)");
+      await get().agentSay(buildGreetingWarmup());
+
+      // Wait for the warm-up to FINISH speaking before sending the body (gap20).
+      // gap19 waited only for the speaking EDGE (start) then sent the body ~250ms
+      // in, which TRUNCATED the warm-up: the 18:11-18:30 logs measured "Good
+      // morning." speaking for only 0.53-0.80s (it needs ~1s), because the body
+      // agentSay landing mid-render cut it short, and on a slow cold render the
+      // whole word was swallowed with the lips still moving. So instead watch for a
+      // full speaking CYCLE: once the agent has entered `speaking` (warm-up audibly
+      // underway) AND returned out of it (warm-up finished), THEN a brief settle and
+      // send the body. The warm-up is now always fully heard, and the gap to the
+      // body is just the body's own render (~2-3s), which reads as the natural
+      // "Good morning. <pause> Hello <name>." the owner preferred. GREETING_WARMUP_MS
+      // is the FALLBACK CAP: if the warm-up never registers a speaking cycle
+      // (unregistered state, avatar worker never spoke), send anyway rather than hang.
+      await new Promise<void>((resolve) => {
+        let sawSpeaking = false;
+        let settleTimer: ReturnType<typeof setTimeout> | null = null;
+        let unsub: (() => void) | null = null;
+        const finish = () => {
+          if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+          if (cap) clearTimeout(cap);
+          if (unsub) { unsub(); unsub = null; }
+          resolve();
+        };
+        const cap = setTimeout(() => {
+          logEvent("agent", "greet: warm-up speaking cycle not seen within cap, sending body anyway");
+          finish();
+        }, GREETING_WARMUP_MS);
+        unsub = useVoiceSessionStore.subscribe(() => {
+          const st = get();
+          // Session died, or a re-armed path already greeted: stop waiting.
+          if (st._greetingSpoken || st.sessionState !== "connected") { finish(); return; }
+          if (st.agentState === "speaking") {
+            // Warm-up is audibly speaking. Do NOT send yet: let it finish.
+            sawSpeaking = true;
+            if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+            return;
+          }
+          // Left `speaking` after having spoken => warm-up finished. Settle a beat
+          // (so the body does not tread on its tail), then send.
+          if (sawSpeaking && !settleTimer) {
+            clearTimeout(cap);
+            settleTimer = setTimeout(finish, GREETING_WARMUP_SETTLE_MS);
+          }
+        });
+      });
+
+      // A disconnect (or a greeting already spoken by a re-armed path) during the
+      // wait means we must not speak into a dead or duplicate session.
+      if (get()._greetingSpoken || get().sessionState !== "connected") return;
+
+      const waited = get().agentState;
+      logEvent("agent", "greet: warm-up done, speaking greeting body", { agentState: waited });
+
+      // Primary: exact wording via direct TTS (agentSay). Some agent builds do
+      // not register the agentSay RPC, so fall back to askAgent.
+      const text = buildGreetingBody(get().greetingName);
+      const sayResult = await get().agentSay(text);
+      if (sayResult?.success === true) {
+        set({ _greetingSpoken: true });
+        logEvent("agent", "greet: agentSay succeeded");
+        // CSU: agentSay is direct TTS, so the model never saw the greeting. Tell it
+        // (silent context, no reply) so it answers the next message instead of
+        // greeting a second time.
+        void get().informAgent(
+          `[GREETING] The page has already greeted the user aloud with: "${buildGreetingWarmup()} ${text}" ` +
+          'Do not greet again or re-introduce yourself. Reply directly to their next message.',
+        );
+        return;
+      }
+
+      logEvent("agent", "greet: agentSay failed, trying askAgent", sayResult);
+      const askResult = await get().askAgent(
+        `Greet the user now by saying exactly, word for word and nothing else: "${text}"`,
+      );
+      if (askResult?.success === true) {
+        set({ _greetingSpoken: true });
+        logEvent("agent", "greet: askAgent fallback succeeded");
+        return;
+      }
+
+      // NON-TERMINAL. Leave _greetingSpoken false and re-arm so the next agent
+      // state transition tries again. Previously this was the end of the road.
+      logEvent("error", "greet: both RPCs failed, will retry on next agent-state change", {
+        say: sayResult,
+        ask: askResult,
+      });
+      _greetingInFlight = false;
+      const unsub = useVoiceSessionStore.subscribe(() => {
+        const st = get();
+        if (st._greetingSpoken || st.sessionState !== "connected") {
+          unsub();
+          return;
+        }
+        if (st.agentState !== "initializing" && !_greetingInFlight) {
+          unsub();
+          void get().greetWhenReady();
+        }
+      });
+      return;
+    } catch (err) {
+      logEvent("error", "greet: threw", String(err));
+      if (!get()._greetingSpoken) set({ _greetingSpoken: false });
+    } finally {
+      // Only clear the in-flight guard if we did not deliberately hand it to a
+      // retry subscription above.
+      if (get()._greetingSpoken) _greetingInFlight = false;
+    }
+  },
+
   // Disconnect from session
   disconnect: async () => {
     const { room, avatarAudioElement, agentAudioElement, _preWarm } = get();
@@ -639,7 +1156,6 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     } finally {
       avatarAudioElement?.remove();
       agentAudioElement?.remove();
-      removePhoneAudio();
 
       // Also clean up pre-warm room if different from active room
       if (_preWarm?.room && _preWarm.room !== room) {
@@ -653,9 +1169,9 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         room: null,
         sessionId: null,
         sessionState: 'idle',
+        isReconnecting: false,
         agentState: 'initializing',
         agentParticipant: null,
-        currentAgentName: null,
         isMuted: false,
         isVolumeMuted: false,
         isOverlayExpanded: false,
@@ -676,7 +1192,9 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         skeletonLayout: null,
         _preWarm: null,
         _preWarmState: 'idle',
+        _greetingSpoken: false,
       });
+      _greetingInFlight = false;
 
       // Re-warm in the background so the next connect() uses the fast path.
       // Small delay ensures all state resets have settled before warming starts.
@@ -685,6 +1203,11 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
   },
 
   // Toggle microphone mute
+  setMicPreferenceMuted: (muted) => {
+    logEvent('media', `mic preference from gate: ${muted === null ? 'unset' : muted ? 'muted' : 'unmuted'}`);
+    set({ micPreferenceMuted: muted });
+  },
+
   toggleMute: () => {
     const { room, isMuted } = get();
     if (!room?.localParticipant) return;
@@ -786,6 +1309,16 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
           },
         ],
       }));
+      // List watchdog — typed messages bypass TranscriptionReceived, so
+      // check the list intent here too. The scene getter lets the create-intent
+      // branch tell "asking for a ticket" apart from "approving the draft
+      // that's on screen".
+      if (SERVICENOW_FEATURES) {
+        maybeNudgeListIntent(trimmed, get().informAgent, () => get().currentScene);
+        // Self-service watchdog — typed messages and click-back chips
+        // ("Network / Wi-Fi") carry problem context its fallback hints use.
+        noteUserProblem(trimmed);
+      }
     } catch (error) {
       console.error('Failed to send text input:', error);
     }
@@ -803,40 +1336,6 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       document.body.classList.remove('chat-squeezed');
     }
   },
-
-  // ── AirVision (touchless hand control) ──
-  // Availability + config come from the per-site `defaults.airVision` payload.
-  setAirVisionAvailability: (payload) => {
-    const { airVisionConfig } = get();
-    const merged = mergeDefaults(airVisionConfig, payload);
-    set({
-      airVisionAvailable: merged.enabled,
-      airVisionConfig: merged.config,
-    });
-  },
-
-  toggleAirVision: () => {
-    const { airVisionActive, airVisionAvailable } = get();
-    // Allow turning OFF even if availability later flips; only gate turning ON.
-    if (!airVisionActive && !airVisionAvailable) return;
-    const next = !airVisionActive;
-    set({
-      airVisionActive: next,
-      airVisionError: null,
-      airVisionStatus: next ? 'requesting-camera' : 'idle',
-      // Hide the camera view when turning AirVision off.
-      airVisionShowCamera: next ? get().airVisionShowCamera : false,
-    });
-  },
-
-  setAirVisionActive: (active) => set({ airVisionActive: active }),
-  setAirVisionStatus: (status) => set({ airVisionStatus: status }),
-  setAirVisionError: (error) => set({ airVisionError: error }),
-  toggleAirVisionCamera: () => set((s) => ({ airVisionShowCamera: !s.airVisionShowCamera })),
-  setAirVisionCameraOpacity: (opacity) =>
-    set({ airVisionCameraOpacity: Math.max(0, Math.min(1, opacity)) }),
-  setAirVisionRenderer: (rendererId) =>
-    set((s) => ({ airVisionConfig: { ...s.airVisionConfig, renderer: rendererId } })),
 
   // Overlay controls (legacy)
   setOverlayExpanded: (expanded) => set({ isOverlayExpanded: expanded }),
@@ -865,6 +1364,16 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
   clearUIComponents: () => set({ uiComponents: [] }),
 
+  addIncidentComment: (incidentNumber, text) => {
+    const num = incidentNumber?.trim();
+    const body = text?.trim();
+    if (!num || !body) return;
+    set((state) => {
+      const prev = state.incidentComments[num] ?? [];
+      return { incidentComments: { ...state.incidentComments, [num]: [...prev, body] } };
+    });
+  },
+
   submitForm: async (templateId, formId, values) => {
     const { room, agentParticipant } = get();
     if (!room?.localParticipant || !agentParticipant) return;
@@ -882,7 +1391,31 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
   // Scene actions
   clearScene: () => {
-    set({ sceneActive: false, currentScene: null });
+    if (_pendingSceneTimer) { clearTimeout(_pendingSceneTimer); _pendingSceneTimer = null; }
+    const cur = get().currentScene;
+    logEvent('scene', `UI: Close scene (${cur?.badge ?? cur?.cards?.[0]?.type ?? 'scene'})`);
+    // Returns to the landing but leaves sceneHistory/sceneFuture intact (owner 2026-11-12:
+    // keep history, do not force a start-over). The full browser-style trail (recording each
+    // home visit so Back walks home->list->home->... in order, plus a Back control on the
+    // landing itself) is a separate, focused change - see LAULI.
+    set({ sceneActive: false, currentScene: null, skeletonLayout: null });
+  },
+
+  showPending: (_layout?: string, _say?: string) => {
+    // NEUTRALIZED 2026-10-28 (owner: "stop that first"). This optimistic placeholder
+    // used to set `skeletonLayout`, which takes PRECEDENCE over the current scene in
+    // SceneManager, so it REPLACED the visible page with a sparse shimmer and spoke a
+    // "one moment" cue. On a clean line (AT's demo) the agent's follow-up renderScene
+    // landed fast and all looked fine. On a slow/flaky line (real sessions, with
+    // reconnects) the render often did NOT land inside the 12s window, so the shimmer
+    // read as a BLANK page, and on clearing it fell back to the SAME card → the user
+    // re-clicked → "one moment" loop / stuck-on-card; create and lookup did the same.
+    // Owner wants the PREVIOUS page to stay during a turn (as AT's build behaved), so
+    // this is now a no-op: the current scene stays visible until the agent's real
+    // renderScene replaces it. A NON-destructive spinner overlay (keeps the page,
+    // adds a small "fetching" indicator) can be added later if we want a loading cue.
+    // Args kept for call-site compatibility. Backup: voice-session-store.ts_pendingfix.
+    return;
   },
 
   navigateSceneBack: () => {
@@ -891,6 +1424,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       const newHistory = [...sceneHistory];
       const previous = newHistory.pop()!;
       const newFuture = currentScene ? [currentScene, ...sceneFuture] : sceneFuture;
+      logEvent('scene', `UI: Back -> ${previous?.badge ?? previous?.cards?.[0]?.type ?? 'scene'} (history ${sceneHistory.length}->${newHistory.length})`);
       set({
         currentScene: previous,
         sceneHistory: newHistory,
@@ -898,6 +1432,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         sceneActive: true,
       });
     } else {
+      logEvent('scene', 'UI: Back -> landing (history empty)');
       set({ sceneActive: false, currentScene: null, sceneHistory: [], sceneFuture: [] });
     }
   },
@@ -907,6 +1442,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     if (sceneFuture.length > 0) {
       const [next, ...rest] = sceneFuture;
       const newHistory = currentScene ? [...sceneHistory, currentScene] : sceneHistory;
+      logEvent('scene', `UI: Forward -> ${next?.badge ?? next?.cards?.[0]?.type ?? 'scene'} (future ${sceneFuture.length}->${rest.length})`);
       set({
         currentScene: next,
         sceneHistory: newHistory,
@@ -916,12 +1452,57 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     }
   },
 
+  beginCreateLock: (shortDesc: string, ownedArgs?: Record<string, unknown>) => {
+    if (get().createInFlight) {
+      logEvent('rpc', 'beginCreateLock: ignored - a create is already in flight');
+      return false;
+    }
+    armApproval(shortDesc, ownedArgs);
+    _sawBusySinceCreate = false;
+    set({ createInFlight: true });
+    if (_createSafetyTimer) clearTimeout(_createSafetyTimer);
+    _createSafetyTimer = setTimeout(() => {
+      logEvent('rpc', 'createLock: safety timeout - unlocking');
+      get().endCreateLock('safety-timeout');
+    }, CREATE_LOCK_SAFETY_MS);
+    logEvent('rpc', `createLock: ENGAGED (submit greyed) for "${(shortDesc || '').slice(0, 60)}"`);
+    return true;
+  },
+
+  endCreateLock: (reason: string) => {
+    if (!get().createInFlight) return;
+    if (_createSafetyTimer) { clearTimeout(_createSafetyTimer); _createSafetyTimer = null; }
+    _sawBusySinceCreate = false;
+    set({ createInFlight: false });
+    logEvent('rpc', `createLock: RELEASED (${reason}) - submit re-enabled`);
+  },
+
   tellAgent: async (message: string) => {
     const { room, agentParticipant } = get();
     if (!room?.localParticipant || !agentParticipant) return null;
 
     const trimmed = message.trim();
     if (!trimmed) return null;
+
+    // Dedupe accidental double-dispatch (2026-09-28). A single UI interaction can
+    // fire the same phrase twice within a few hundred ms (seen in the 06-43 log:
+    // "Show me my open incidents" sent at 41.928s AND 42.218s from one click,
+    // likely a touch device double-activation). The backend faithfully ran it
+    // twice, produced two LLM streams, and the second cut off the first mid-speech
+    // -> the "list stutter". This is the ONE chokepoint every tellAgent caller
+    // passes through, so guarding here protects the landing chip and every card
+    // (KBSuggestionCard once fired nine times). If the identical message arrives
+    // inside the window, drop the duplicate and return a success so the caller is
+    // none the wiser. A genuine deliberate repeat of the exact phrase within ~1.5s
+    // is implausible for these button/voice phrases; raise the window only if one
+    // is ever legitimately swallowed.
+    const now = Date.now();
+    if (trimmed === lastTellAgentMessage && now - lastTellAgentAt < TELL_AGENT_DEDUPE_MS) {
+      logEvent('rpc', `tellAgent: deduped duplicate within ${now - lastTellAgentAt}ms: "${trimmed.slice(0, 60)}"`);
+      return { success: true };
+    }
+    lastTellAgentMessage = trimmed;
+    lastTellAgentAt = now;
 
     try {
       // Add to transcripts as user message (visible)
@@ -973,9 +1554,17 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       logInformAgentResponse(message, parsed);
       return parsed;
     } catch (error) {
-      console.error('informAgent error:', error);
-      logInformAgentResponse(message, { success: false, error: String(error) });
-      return { success: false, error: String(error) };
+      // Some agent builds don't register an informAgent RPC handler. Treat
+      // "Method not supported at destination" as a soft warning rather than
+      // an error so it doesn't pollute the dev console / Next.js error overlay.
+      const msg = String(error);
+      if (msg.includes('Method not supported')) {
+        console.warn('informAgent: agent does not support this RPC method (silent context will not be delivered)');
+      } else {
+        console.error('informAgent error:', error);
+      }
+      logInformAgentResponse(message, { success: false, error: msg });
+      return { success: false, error: msg };
     }
   },
 
@@ -1036,42 +1625,6 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
     }
   },
 
-  // transferAgent: switch to a different agent in a multi-agent workflow.
-  // Performs the `setActiveAgent` RPC against the agent participant. Only valid
-  // when the session is running a workflow (currentAgentName is non-null);
-  // single-agent sessions return a structured error.
-  transferAgent: async (
-    name: string,
-    options?: { preserveHistory?: boolean }
-  ) => {
-    const { room, agentParticipant } = get();
-    if (!room?.localParticipant || !agentParticipant) {
-      return { ok: false, error: 'no active session' } as const;
-    }
-    if (!get().currentAgentName) {
-      return {
-        ok: false,
-        error: 'session is not running a workflow',
-      } as const;
-    }
-    try {
-      const response = await room.localParticipant.performRpc({
-        destinationIdentity: agentParticipant.identity,
-        method: 'setActiveAgent',
-        payload: JSON.stringify({
-          name,
-          preserveHistory: options?.preserveHistory,
-        }),
-      });
-      return JSON.parse(response) as
-        | { ok: true; currentAgent: string }
-        | { ok: false; error: string };
-    } catch (error) {
-      console.error('transferAgent error:', error);
-      return { ok: false, error: String(error) } as const;
-    }
-  },
-
   // ── Snake_case aliases (coding-agent compatibility) ──
   // AI coding assistants may generate snake_case calls when a client says
   // "call tell_agent here". These aliases forward to the camelCase methods.
@@ -1079,44 +1632,30 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
   inform_agent: async (message: string) => get().informAgent(message),
   ask_agent: async (message: string) => get().askAgent(message),
   agent_say: async (message: string) => get().agentSay(message),
-  transfer_agent: async (
-    name: string,
-    options?: { preserveHistory?: boolean }
-  ) => get().transferAgent(name, options),
 }));
 
-/**
- * MAIN-393: a person on the phone in this web call (the site's host, dialled in by the platform: a SIP participant).
- * The visitor must hear them, so each plays in an element of its own (`audio-phone-<identity>`) beside the agent's,
- * following the speaker mute.
- */
-const PHONE_AUDIO_PREFIX = 'audio-phone-';
-export function playPhoneParticipant(
-  track: Pick<RemoteTrack, 'kind' | 'attach'>,
-  participant: Pick<RemoteParticipant, 'kind' | 'identity'>,
-  muted: boolean,
-): boolean {
-  if (track.kind !== Track.Kind.Audio || participant.kind !== ParticipantKind.SIP) return false;
-  document.getElementById(`${PHONE_AUDIO_PREFIX}${participant.identity}`)?.remove();
-  const audioElement = track.attach() as HTMLAudioElement;
-  audioElement.id = `${PHONE_AUDIO_PREFIX}${participant.identity}`;
-  audioElement.autoplay = true;
-  audioElement.muted = muted;
-  document.body.appendChild(audioElement);
-  audioElement.play().catch((e) => console.warn('Phone participant audio autoplay blocked:', e));
-  return true;
-}
-export function removePhoneAudio(identity?: string) {
-  if (typeof document === 'undefined') return;
-  if (identity !== undefined) {
-    document.getElementById(`${PHONE_AUDIO_PREFIX}${identity}`)?.remove();
-    return;
+// ── DSL recovery ──
+// The Show LLM sometimes wraps card rows in prose, mangles the ===CARDS===
+// framing, or emits rows a strict parse rejects. Extract lines that look
+// like known card types and re-parse. Returns null when nothing is
+// recoverable — callers decide what to do with a truly empty scene.
+const KNOWN_CARD_TYPES = /^(question-card|incident-card|incident-draft|info-card|kb-suggestion|resolve-page|stat|callout|person-card|relationship-card|country-card|image-card|kpi-strip|metric-list|bullet-list|alert|timeline|checklist|pipeline|ranked-list|bar-chart|donut|waterfall|line-chart|org-roster|delegation-card|decision-card|data-cluster|calendar|risk-matrix|stacked-bar|table|comparison-table|heatmap|product-carousel|product-categories|product-detail)\s*\|/i;
+
+function recoverSceneFromDSL(dslBlock: string): ReturnType<typeof parseDSL> | null {
+  const rawLines = dslBlock.split('\n');
+  const recoveredLines: string[] = [];
+  let badge: string | undefined;
+  let layout: string | undefined;
+  for (const line of rawLines) {
+    const trimmed = line.trim();
+    if (trimmed.match(/^badge:\s*/i)) { badge = trimmed; continue; }
+    if (trimmed.match(/^layout:\s*/i)) { layout = trimmed; continue; }
+    if (KNOWN_CARD_TYPES.test(trimmed)) { recoveredLines.push(trimmed); }
   }
-  document.querySelectorAll(`audio[id^="${PHONE_AUDIO_PREFIX}"]`).forEach((el) => el.remove());
-}
-function mutePhoneAudio(muted: boolean) {
-  if (typeof document === 'undefined') return;
-  document.querySelectorAll<HTMLAudioElement>(`audio[id^="${PHONE_AUDIO_PREFIX}"]`).forEach((el) => { el.muted = muted; });
+  if (recoveredLines.length === 0) return null;
+  const rebuilt = `===CARDS===\n${layout ? layout + '\n' : ''}${badge ? badge + '\n' : ''}${recoveredLines.join('\n')}\n===END===`;
+  const parsed = parseDSL(rebuilt);
+  return parsed.cards.length > 0 ? parsed : null;
 }
 
 function applyAudioRouting(get: () => VoiceSessionState) {
@@ -1136,8 +1675,6 @@ function applyAudioRouting(get: () => VoiceSessionState) {
   if (avatarAudioElement) {
     avatarAudioElement.muted = isVolumeMuted || !useAvatarAudio;
   }
-
-  mutePhoneAudio(isVolumeMuted);
 }
 
 // Helper: Set up room event listeners
@@ -1153,20 +1690,74 @@ function setupRoomEventListeners(
   room.on(RoomEvent.ConnectionStateChanged, (connectionState: ConnectionState) => {
     console.log('Connection state:', connectionState);
     logConnectionStateChange(connectionState);
+
+    // Anchor the room-join timeline on the browser's connect, and announce each
+    // joinee relative to it (owner 2026-10-02).
+    if (connectionState === ConnectionState.Connected) {
+      roomConnectedAt = Date.now();
+      logEvent('lifecycle', 'ROOM JOIN [1/4]: browser connected to the room (+0.0s anchor)');
+    } else if (connectionState === ConnectionState.Disconnected) {
+      roomConnectedAt = 0;
+    }
+
+    // Masked-reconnect fix. LiveKit keeps `sessionState` at 'connected' through
+    // a reconnect, so without this the UI reports a healthy session over a room
+    // that is actually re-establishing (the frozen "Connected in 5.1s"), and if
+    // the reconnect NEVER completes the session is a masked corpse that still
+    // ticks its timer and lets Extend fire into nothing. So: flag the reconnect
+    // for the UI, and arm a watchdog that forces an honest teardown if it does
+    // not recover within RECONNECT_HANG_MS.
+    if (
+      connectionState === ConnectionState.Reconnecting ||
+      connectionState === ConnectionState.SignalReconnecting
+    ) {
+      if (get().sessionState === 'connected' && !get().isReconnecting) {
+        set({ isReconnecting: true });
+      }
+      if (_reconnectWatchdog === null) {
+        _reconnectWatchdog = setTimeout(() => {
+          _reconnectWatchdog = null;
+          // Still stuck. Only act if we still think we are connected; a real
+          // Disconnected in the meantime has already torn everything down.
+          if (get().sessionState === 'connected') {
+            void get().disconnect();
+          }
+        }, RECONNECT_HANG_MS);
+      }
+      return;
+    }
+
+    // Recovered: the reconnect completed and the room is live again. Clear the
+    // flag and the watchdog. The greeting stays suppressed (GreetOnReady greets
+    // once per page), so the resume is silent.
+    if (connectionState === ConnectionState.Connected) {
+      clearReconnectWatchdog();
+      if (get().isReconnecting) set({ isReconnecting: false });
+      return;
+    }
+
     if (connectionState === ConnectionState.Disconnected) {
+      // A reconnect that ended in a real drop: stop the watchdog, it has done
+      // its job or been overtaken by an actual disconnect.
+      clearReconnectWatchdog();
+      // Guard against the DOUBLE log seen live: every disconnect produced two
+      // "connection: disconnected" and two "session disconnected" lines. A
+      // pre-warmed room and the active room can both be attached to these
+      // listeners, so both fire. Only the first teardown is meaningful; the
+      // second had nothing left to tear down and only doubled the noise.
+      if (get().sessionState === 'idle' && !get().room) return;
       logSessionDisconnected();
       const { avatarAudioElement, agentAudioElement } = get();
       avatarAudioElement?.remove();
       agentAudioElement?.remove();
-      removePhoneAudio();
       document.body.classList.remove('chat-squeezed');
       setInformTeleRoom(null);
       // Note: currentScene is NOT cleared on disconnect — last scene persists on the page
       set({
         sessionState: 'idle',
+        isReconnecting: false,
         agentState: 'initializing',
         agentParticipant: null,
-        currentAgentName: null,
         room: null,
         avatarEnabled: false,
         avatarVisible: true,
@@ -1187,13 +1778,19 @@ function setupRoomEventListeners(
         sceneHistory: [],
         sceneFuture: [],
         skeletonLayout: null,
+        _greetingSpoken: false,
       });
+      _greetingInFlight = false;
     }
   });
 
   // Track subscriptions (for agent/avatar audio and video)
   room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
     console.log('Track subscribed:', track.kind, 'from', participant.identity);
+    // Timeline marker. The avatar VIDEO track is the moment the user can
+    // actually see her, which is what "engaged" means and the last big unknown
+    // in the connect timeline.
+    logEvent('media', `TrackSubscribed ${track.kind}`, { from: participant.identity });
 
     const publishOnBehalf = participant.attributes?.['lk.publish_on_behalf'];
 
@@ -1214,8 +1811,6 @@ function setupRoomEventListeners(
         set({ avatarAudioTrack: track, avatarAudioElement: audioElement });
         applyAudioRouting(get);
       }
-    } else if (playPhoneParticipant(track, participant, get().isVolumeMuted)) {
-      // MAIN-393: the site's host on the phone — heard beside the agent.
     } else if (track.kind === Track.Kind.Audio) {
       if (participant.kind === ParticipantKind.AGENT) {
         const audioElement = track.attach() as HTMLAudioElement;
@@ -1237,7 +1832,6 @@ function setupRoomEventListeners(
       const agentElementId = `audio-agent-${participant.identity}`;
       document.getElementById(avatarElementId)?.remove();
       document.getElementById(agentElementId)?.remove();
-      removePhoneAudio(participant.identity);
     }
 
     const publishOnBehalf = participant.attributes?.['lk.publish_on_behalf'];
@@ -1256,6 +1850,24 @@ function setupRoomEventListeners(
     track.detach();
   });
 
+  // Active speakers: the only cheap signal for "the user actually spoke".
+  //
+  // Logged as an EVENT, never as audio: media itself is not recorded, only the
+  // fact and the time. `lastUserSpeechAt` is what the mic auto-mute reads, so
+  // an open mic in a shared room closes itself after a configured quiet period.
+  room.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
+    const localId = room.localParticipant?.identity;
+    const userSpeaking = speakers.some((p) => p.identity === localId);
+    if (userSpeaking) {
+      const prev = get().lastUserSpeechAt;
+      set({ lastUserSpeechAt: Date.now() });
+      // Only log the transition, not every 200ms of continued speech.
+      if (!prev || Date.now() - prev > 2000) {
+        logEvent('speech', 'user voice detected, outbound stream active');
+      }
+    }
+  });
+
   // Participant connected
   room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
     console.log('Participant connected:', participant.identity, 'kind:', participant.kind);
@@ -1264,20 +1876,29 @@ function setupRoomEventListeners(
     if (publishOnBehalf) {
       console.log('Avatar worker connected');
       logParticipantConnected(participant.identity, 'avatar-worker');
+      logEvent('lifecycle', `ROOM JOIN [2/4]: avatar worker (HeyGen) joined ${joinElapsed()} after browser`);
       set({ avatarParticipant: participant });
       return;
     }
 
-    logParticipantConnected(participant.identity, participant.kind === ParticipantKind.AGENT ? 'agent' : 'participant');
+    const isAgent = participant.kind === ParticipantKind.AGENT;
+    logParticipantConnected(participant.identity, isAgent ? 'agent' : 'participant');
+    if (isAgent) {
+      logEvent('lifecycle', `ROOM JOIN [3/4]: agent joined ${joinElapsed()} after browser (now BOOTING — watch for "agent ready")`);
+    }
     if (participant.kind === ParticipantKind.AGENT) {
       set({ agentParticipant: participant });
       updateAgentStateFromAttributes(participant, set, get);
 
       participant.on('attributesChanged', (changedAttributes) => {
-        if (
-          AGENT_STATE_ATTRIBUTE in changedAttributes ||
-          AGENT_NAME_ATTRIBUTE in changedAttributes
-        ) {
+        // Log every key, not just lk.agent.state. The agent can sit in
+        // `initializing` for anywhere between 1.3s and 29.8s (both measured on
+        // the same build), and during that window nothing is recorded. If the
+        // worker publishes any other attribute in the meantime this is what
+        // surfaces it; if the log stays silent, that is itself the finding, and
+        // it points at AWS agent cold start rather than at this client.
+        logEvent('agent', 'agent attributes changed', Object.keys(changedAttributes).join(','));
+        if (AGENT_STATE_ATTRIBUTE in changedAttributes) {
           updateAgentStateFromAttributes(participant, set, get);
         }
       });
@@ -1311,10 +1932,7 @@ function setupRoomEventListeners(
       if (participant.attributes?.['lk.publish_on_behalf']) {
         return;
       }
-      if (
-        AGENT_STATE_ATTRIBUTE in changedAttributes ||
-        AGENT_NAME_ATTRIBUTE in changedAttributes
-      ) {
+      if (AGENT_STATE_ATTRIBUTE in changedAttributes) {
         updateAgentStateFromAttributes(participant, set, get);
       }
     }
@@ -1329,9 +1947,244 @@ function setupRoomEventListeners(
         participant?.kind === ParticipantKind.AGENT ||
         participant?.identity === agentParticipant?.identity;
 
+      let displayText = segment.text;
+
+      // ── Inline DSL extraction ──
+      // If the agent embeds a ===CARDS=== … ===END=== block in the transcript
+      // (instead of the dedicated ui-engine:scene data channel), extract it,
+      // render the scene, and strip it from the chat bubble.
+      //
+      // Tolerant matching: the LLM occasionally drifts on the markers
+      // (uppercase only, extra spaces, missing END marker, wrapping in ``` fences,
+      // or substituting ===CARD=== / === CARDS ===). We accept any of those.
+      const cardsOpenRe = /={2,4}\s*CARDS?\s*={2,4}/i;
+      if (isAgent && segment.final && cardsOpenRe.test(segment.text)) {
+        // 1. Try the well-formed pattern first (open … END).
+        let dslBlock: string | null = null;
+        const wellFormed = segment.text.match(/(={2,4}\s*CARDS?\s*={2,4}[\s\S]*?={2,4}\s*END\s*={2,4})/i);
+        if (wellFormed) {
+          dslBlock = wellFormed[1];
+        } else {
+          // 2. Fallback: open marker but no END marker. Take everything from
+          // ===CARDS=== to end-of-segment and synthesise ===END===.
+          const openMatch = segment.text.match(/={2,4}\s*CARDS?\s*={2,4}[\s\S]*$/i);
+          if (openMatch) {
+            dslBlock = `===CARDS===\n${openMatch[0].replace(/^={2,4}\s*CARDS?\s*={2,4}\s*/i, '')}\n===END===`;
+            console.warn('[inline-dsl] missing ===END=== marker — synthesised closing tag');
+          }
+        }
+
+        if (dslBlock) {
+          try {
+            let parsed = parseDSL(dslBlock);
+
+            // Retry: if 0 cards parsed, attempt lightweight recovery.
+            // Common failure: LLM wraps DSL in extra text or skips type prefix.
+            if (parsed.cards.length === 0) {
+              console.warn('[inline-dsl] 0 cards on first pass — attempting recovery:', dslBlock.slice(0, 200));
+              const recovered = recoverSceneFromDSL(dslBlock);
+              if (recovered) {
+                parsed = recovered;
+                console.info('[inline-dsl] recovery succeeded —', parsed.cards.length, 'card(s)');
+              } else {
+                console.warn('[inline-dsl] recovery still yielded 0 cards');
+              }
+            }
+
+            if (parsed.cards.length > 0) {
+              const sceneData: SceneData = {
+                id: `scene-inline-${segment.id}`,
+                badge: parsed.badge,
+                layout: parsed.layout,
+                cards: parsed.cards,
+                timestamp: new Date(),
+              };
+              set((state) => ({
+                currentScene: sceneData,
+                skeletonLayout: null,
+                sceneActive: true,
+                sceneHistory: state.currentScene
+                  ? [...state.sceneHistory, state.currentScene].slice(-SCENE_HISTORY_MAX)
+                  : state.sceneHistory,
+                sceneFuture: [],
+              }));
+            } else {
+              console.warn('[inline-dsl] parsed 0 cards from block:', dslBlock.slice(0, 200));
+            }
+          } catch (err) {
+            console.error('[inline-dsl] parse error:', err, 'block:', dslBlock.slice(0, 200));
+          }
+          // Remove the DSL block (and any surrounding ``` fence) from the bubble.
+          displayText = segment.text
+            .replace(/```[a-zA-Z]*\s*={2,4}\s*CARDS?\s*={2,4}[\s\S]*?(?:={2,4}\s*END\s*={2,4}|$)\s*```?/gi, '')
+            .replace(/={2,4}\s*CARDS?\s*={2,4}[\s\S]*?(?:={2,4}\s*END\s*={2,4}|$)/gi, '')
+            .trim();
+        }
+      }
+
+      // ── Draft-flow safety nets ──
+      // The realtime model often drops the second renderScene call after a
+      // priority change ("Set to Moderate — ready to file?") or after
+      // create_incident success ("Done — INC0010039."). The screen stays
+      // on the stale draft. Watch agent transcripts for these signals and
+      // patch the scene client-side.
+      if (isAgent && segment.final) {
+        const state = get();
+        const scene = state.currentScene;
+        const draftCard = scene?.cards?.find((c) => c.type === 'incident-draft');
+
+        // 0) List watchdog — agent claimed "no incidents": verify a real
+        // SN_List_Records call backs it, otherwise force a correction.
+        if (SERVICENOW_FEATURES) maybeCorrectAbsenceClaim(segment.text, state.askAgent);
+
+        // 0b) Self-service watchdog — (a) agent claimed "no self-service fix"
+        // with no kb_search behind it, (b) agent asked a mandated clarifying
+        // question with no question-card on screen. The scene is passed as a
+        // getter because (b) re-checks after a grace window. (b) renders the
+        // card client-side and only informs the agent — askAgent would make
+        // the model re-speak the question (observed live 2026-08-05).
+        if (SERVICENOW_FEATURES) {
+          maybeCorrectKbAbsence(segment.text, state.askAgent);
+          maybeEnsureQuestionCard(segment.text, state.informAgent, () => get().currentScene);
+        }
+
+        // 1) Priority confirmation — agent says "Set to <X>" or "Priority set to <X>"
+        if (draftCard) {
+          const pm = segment.text.match(/\b(?:set\s+to|priority\s+(?:set\s+to|is|now))\s+(low|moderate|medium|high|critical)\b/i);
+          if (pm) {
+            const raw = pm[1].toLowerCase();
+            const priority = raw === 'medium' ? 'Moderate' : (raw.charAt(0).toUpperCase() + raw.slice(1));
+            if ((draftCard.priority || '').toLowerCase() !== priority.toLowerCase()) {
+              const severity =
+                priority === 'Critical' ? 'critical' :
+                priority === 'High' ? 'high' :
+                priority === 'Moderate' ? 'warning' : 'info';
+              const updatedDraft = { ...draftCard, priority, severity };
+              const updatedCards = scene!.cards!.map((c) =>
+                c === draftCard ? updatedDraft : c
+              );
+              set({
+                currentScene: {
+                  ...scene!,
+                  id: `scene-draft-prio-${Date.now()}`,
+                  cards: updatedCards,
+                  timestamp: new Date(),
+                },
+              });
+            }
+          }
+        }
+
+        // 2) Create-success — agent says an INC number. Flip to an incident-card
+        // built from the most recent draft (current scene OR sceneHistory), so this
+        // also works when the user clicked "Create the ticket anyway" from the
+        // KB-suggestion page or any other scene that pushed the draft to history.
+        const incMatch = segment.text.match(/\bINC\d{6,}\b/i);
+        if (incMatch) {
+          const number = incMatch[0].toUpperCase();
+
+          // De-dupe: skip if any visible scene already shows this INC as an incident-card.
+          const allScenes = [scene, ...state.sceneHistory].filter(Boolean) as SceneData[];
+          const alreadyShown = allScenes.some((sc) =>
+            sc.cards?.some(
+              (c) => c.type === 'incident-card' && (c.number || '').toUpperCase() === number,
+            ),
+          );
+
+          // Find the most recent draft to source fields from.
+          const draftSource =
+            draftCard ||
+            [...state.sceneHistory].reverse().flatMap((sc) => sc.cards || [])
+              .find((c) => c.type === 'incident-draft');
+
+          if (!alreadyShown && draftSource) {
+            const incidentCard = {
+              type: 'incident-card',
+              severity: draftSource.severity || 'info',
+              title: draftSource.title,
+              summary: draftSource.summary,
+              impact: draftSource.impact,
+              resolution: draftSource.resolution,
+              number,
+              state: 'New',
+              priority: draftSource.priority,
+              assignedTo: draftSource.assignedTo,
+              assignmentGroup: draftSource.assignmentGroup,
+              category: draftSource.category,
+            };
+            set((s) => ({
+              currentScene: {
+                id: `scene-auto-inc-${number}-${Date.now()}`,
+                badge: 'INCIDENT CREATED',
+                layout: scene?.layout,
+                cards: [incidentCard],
+                timestamp: new Date(),
+              },
+              skeletonLayout: null,
+              sceneActive: true,
+              sceneHistory: s.currentScene
+                ? [...s.sceneHistory, s.currentScene].slice(-SCENE_HISTORY_MAX)
+                : s.sceneHistory,
+              sceneFuture: [],
+            }));
+            markIncidentRendered(number);
+          }
+        }
+      }
+
+      // ── User-voice: "go back to the draft" ──
+      // The agent has no good way to re-render the draft from memory, and the
+      // store doesn't expose this as a tool. Catch the intent on the user's
+      // own transcript and restore the most recent draft scene from history.
+      if (!isAgent && segment.final) {
+        // List watchdog — user asked for their incidents: remind the agent
+        // (silently, via informAgent) that the tool call is mandatory.
+        if (SERVICENOW_FEATURES) {
+          maybeNudgeListIntent(segment.text, get().informAgent, () => get().currentScene);
+          // Self-service watchdog — harvest problem context ("my email is
+          // broken") so its client-rendered fallback hints adapt per problem.
+          noteUserProblem(segment.text);
+        }
+
+        const draftIntent = /\b(?:go\s+back\s+to|back\s+to|show\s+(?:me\s+)?the|open\s+(?:the\s+)?|return\s+to\s+(?:the\s+)?)\s*(?:my\s+)?draft\b/i;
+        if (draftIntent.test(segment.text)) {
+          const state = get();
+          const currentHasDraft =
+            state.currentScene?.cards?.some((c) => c.type === 'incident-draft');
+          if (!currentHasDraft) {
+            // Find the most recent history scene containing an incident-draft.
+            const history = state.sceneHistory;
+            let targetIdx = -1;
+            for (let i = history.length - 1; i >= 0; i--) {
+              if (history[i].cards?.some((c) => c.type === 'incident-draft')) {
+                targetIdx = i;
+                break;
+              }
+            }
+            if (targetIdx >= 0) {
+              const target = history[targetIdx];
+              const newHistory = history.slice(0, targetIdx);
+              // Everything after the target (plus current) becomes future,
+              // so navigateSceneForward can return the user to where they were.
+              const skipped = history.slice(targetIdx + 1);
+              const newFuture = state.currentScene
+                ? [...skipped, state.currentScene, ...state.sceneFuture]
+                : [...skipped, ...state.sceneFuture];
+              set({
+                currentScene: target,
+                sceneHistory: newHistory,
+                sceneFuture: newFuture,
+                sceneActive: true,
+                skeletonLayout: null,
+              });
+            }
+          }
+        }
+      }
+
       const entry: TranscriptEntry = {
         id: segment.id,
-        text: segment.text,
+        text: displayText,
         participant: isAgent ? 'agent' : 'user',
         participantName: participant?.name || participant?.identity || 'Unknown',
         timestamp: new Date(),
@@ -1355,16 +2208,16 @@ function setupRoomEventListeners(
 
   // Disconnection
   room.on(RoomEvent.Disconnected, () => {
+    clearReconnectWatchdog();
     const { avatarAudioElement, agentAudioElement } = get();
     avatarAudioElement?.remove();
     agentAudioElement?.remove();
-    removePhoneAudio();
     document.body.classList.remove('chat-squeezed');
     set({
       sessionState: 'idle',
+      isReconnecting: false,
       agentState: 'initializing',
       agentParticipant: null,
-      currentAgentName: null,
       room: null,
       avatarEnabled: false,
       avatarVisible: true,
@@ -1392,7 +2245,9 @@ function setupRoomEventListeners(
 
     try {
       const message = JSON.parse(new TextDecoder().decode(payload));
-      console.log('DataReceived [ui-engine:scene]:', message.type, message);
+      // Logging is gated behind window.observability (logDataScene) — an
+      // ungated console.log of every scene object retains them all in
+      // devtools memory whenever the console is open.
       logDataScene(message);
 
       if (message.type === 'skeleton') {
@@ -1405,7 +2260,27 @@ function setupRoomEventListeners(
 
         if (message.dsl && typeof message.dsl === 'string') {
           // New DSL path — parse pipe-delimited format
-          const parsed = parseDSL(message.dsl);
+          let parsed = parseDSL(message.dsl);
+          if (parsed.cards.length === 0) {
+            const recovered = recoverSceneFromDSL(message.dsl);
+            if (recovered) {
+              console.info('[scene] recovered', recovered.cards.length, 'card(s) from malformed DSL');
+              parsed = recovered;
+            }
+          }
+          if (parsed.cards.length === 0) {
+            // An empty scene must never blank a populated screen (the Show
+            // LLM's own rules say emit nothing instead) — drop it and keep
+            // whatever is currently displayed.
+            console.warn(
+              '[scene] empty scene dropped (badge:',
+              parsed.badge,
+              ') — keeping current content. DSL:',
+              String(message.dsl).slice(0, 200),
+            );
+            set({ skeletonLayout: null });
+            return;
+          }
           sceneData = {
             id: message.id || `scene-${Date.now()}`,
             badge: parsed.badge,
@@ -1417,13 +2292,19 @@ function setupRoomEventListeners(
           };
         } else {
           // Legacy JSON path (backward compat during migration)
+          const legacyCards = message.cards || [];
+          if (legacyCards.length === 0) {
+            console.warn('[scene] empty legacy scene dropped — keeping current content');
+            set({ skeletonLayout: null });
+            return;
+          }
           sceneData = {
             id: message.id || `scene-${Date.now()}`,
             badge: message.badge,
             title: message.title,
             subtitle: message.subtitle,
             layout: message.layout,
-            cards: message.cards || [],
+            cards: legacyCards,
             maxRows: message.maxRows,
             footerLeft: message.footerLeft,
             footerRight: message.footerRight,
@@ -1435,7 +2316,7 @@ function setupRoomEventListeners(
           currentScene: sceneData,
           skeletonLayout: null,
           sceneActive: true,
-          sceneHistory: state.currentScene ? [...state.sceneHistory, state.currentScene] : state.sceneHistory,
+          sceneHistory: state.currentScene ? [...state.sceneHistory, state.currentScene].slice(-SCENE_HISTORY_MAX) : state.sceneHistory,
           sceneFuture: [],
         }));
       }
@@ -1450,18 +2331,197 @@ function setupRoomEventListeners(
     if (topic !== 'tool-activity') return;
     try {
       const event = JSON.parse(new TextDecoder().decode(payload));
-      console.log('DataReceived [tool-activity]:', event);
+      // Gated logging only (window.observability) — the raw console.log here
+      // dumped every full tool payload ungated, and open devtools retained
+      // each one.
       logDataToolActivity(event);
+
+      // Raw record dump (debug): while a dump window is open, log any tool event
+      // that references the target INC WHOLE and untruncated — the "SELECT *" gate,
+      // client-side. Captures the fetch's result rows (event.data) without needing
+      // the agent to call a function it may not be registered for.
+      try {
+        if (Date.now() < rawDumpPendingUntil) {
+          const blob = JSON.stringify(event);
+          if (!rawDumpNumber || blob.toUpperCase().includes(rawDumpNumber)) {
+            logSample(
+              'lifecycle',
+              `RAW SN record capture (${event?.tool ?? 'tool'} / ${event?.action ?? '?'})`,
+              JSON.stringify(event, null, 2),
+            );
+          }
+        }
+      } catch {
+        /* never let the dump break the data-channel handler */
+      }
+      // The chat panel's debug view only needs a preview, not the whole
+      // payload: a 10-incident list with descriptions is tens of KB, and it
+      // used to be stored VERBATIM in state, forever. The watchdogs all
+      // consume the raw `event` above/below, never this entry, so truncating
+      // here loses nothing.
+      const fullText = JSON.stringify({ _source: event.source, tool: event.tool, ...event.data });
       const entry: TranscriptEntry = {
         id: `tool-${event.source}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        text: JSON.stringify({ _source: event.source, tool: event.tool, ...event.data }),
+        text: fullText.length > 1500 ? `${fullText.slice(0, 1500)}… [truncated]` : fullText,
         participant: 'tool',
         participantName: event.tool || 'unknown',
         timestamp: new Date(event.timestamp ? event.timestamp * 1000 : Date.now()),
         isFinal: true,
         isAgent: false,
       };
-      set((state) => ({ toolActivity: [...state.toolActivity, entry] }));
+      // Ring buffer: keep the last 50 tool events. Nothing reads older ones —
+      // unbounded growth just bloated the store (and every ChatPanel merge).
+      set((state) => ({ toolActivity: [...state.toolActivity.slice(-49), entry] }));
+
+      // Identity: learn the signed-in user's sys_user.sys_id the moment the
+      // caller lookup returns, so every later create can set caller_id and
+      // every later read can use the indexed query instead of a dot-walk.
+      // Must run BEFORE the create guard below, which consumes that sys_id.
+      if (SERVICENOW_FEATURES) noteUserLookup(event);
+
+      // Ownership repair: a create that lands with neither caller_id nor the
+      // description stamp is invisible to every future list. Patch it now.
+      if (SERVICENOW_FEATURES) noteCreateActivity(event, get().askAgent);
+
+      // Dedup hold release: on a create's terminal result, keep the hold if it
+      // succeeded (a record came back) and clear it if it failed, so a retry of
+      // the same content is not wrongly blocked. See draftApproval.noteCreateResult.
+      try {
+        const tool = event?.tool;
+        const action = event?.action;
+        if (typeof tool === 'string' && /create_record$/i.test(tool) &&
+            (action === 'completed' || action === 'error' || action === 'failed')) {
+          const resArr = event?.data?.result;
+          const ok = Array.isArray(resArr) && resArr.some((r: unknown) => {
+            const rec = r as { number?: unknown; sys_id?: unknown } | null;
+            return !!rec && (!!rec.number || !!rec.sys_id);
+          });
+          noteCreateResult(tool, event?.data?.arguments ?? {}, ok);
+        }
+      } catch {
+        /* never let the dedup hook break the data-channel handler */
+      }
+
+      // Safety net: if the realtime model dropped the post-tool renderScene
+      // call (common after create_incident / update_incident), auto-render
+      // the incident-card here from the tool payload. De-duped by INC number
+      // so explicit model renders still take precedence.
+      try {
+        if (SERVICENOW_FEATURES) maybeAutoRenderFromToolActivity(event);
+      } catch (e) {
+        console.warn('autoRenderFromToolActivity failed:', e);
+      }
+
+      // Post-create verify: guarantees the visible INCIDENT CREATED card
+      // matches SN's stored priority (SN's Calculated Priority business rule
+      // can diverge from what the LLM sent). Re-renders CLIENT-SIDE from this
+      // same payload — SN_Create_Record's response is already the stored
+      // record — so it costs no model turn and no second round trip, and only
+      // fires when the on-screen value actually drifted.
+      try {
+        if (SERVICENOW_FEATURES) maybePostCreateVerify(event, () => get().currentScene);
+      } catch (e) {
+        console.warn('postCreateVerify failed:', e);
+      }
+
+      // List watchdog: track incident List_Records activity so agent
+      // "no incidents" claims can be checked against real tool calls.
+      if (SERVICENOW_FEATURES) noteIncidentToolActivity(event);
+
+      // Self-service watchdog: track kb_search activity so agent
+      // "no self-service fix" claims can be checked the same way.
+      if (SERVICENOW_FEATURES) noteKbToolActivity(event);
+
+      // CALL capture (owner 2026-10-13). "A search is a call." A kb_search carries
+      // a CLEAN problem statement in arguments.query (e.g. "USB stick not recognized
+      // on Surface tablet") — stamp it onto the session's Call. This fires off the
+      // tool event itself, so it is reliable even when the agent speaks the KB
+      // results instead of rendering a card (confirmed: kb-suggestion cards often
+      // never render). recordSearch opens a new Call per distinct problem and
+      // refreshes on a repeat, so this does not pile up duplicates. On SN_Create_Record
+      // we link the created INC back to the promoted call for navigation.
+      try {
+        const tool = String(event?.tool ?? '');
+        // The KB tool varies by backend and nests its query differently: SN tools put
+        // args under data.arguments, but search_combined_knowledge (the live backend,
+        // owner 2026-11-12) puts the query straight on data.query. Read BOTH, or a call
+        // is never recorded and "View Calls" stays empty (proven in the 00:45 log: the
+        // tool was search_combined_knowledge, so recordSearch never fired).
+        const data = (event?.data ?? {}) as Record<string, unknown>;
+        const args = (data.arguments ?? {}) as Record<string, unknown>;
+        const query = (typeof args.query === 'string' ? args.query.trim() : '')
+          || (typeof data.query === 'string' ? data.query.trim() : '');
+        if ((tool === 'kb_search' || tool === 'SN_Get_Knowledge_Articles' || tool === 'search_combined_knowledge') && query) {
+          const callUser = callUserKey(getIdentityEmail());
+          const call = useCallsStore.getState().recordSearch(callUser, { shortDescription: query });
+          // Persist to ServiceNow new_call (owner 2026-11-11). GATED: no-op until
+          // CALLS_SINK_PATH is set and on an Azure path (see callsSink.ts). On success
+          // swap the mock CALL# for the real one ServiceNow assigned. Fire-and-forget.
+          void import('@/lib/callsSink').then(({ postNewCall }) =>
+            postNewCall(call).then((realNum) => {
+              if (realNum) useCallsStore.getState().updateCall(callUser, call.number, { number: realNum });
+            }),
+          );
+        }
+        if (tool === 'SN_Create_Record') {
+          const created =
+            extractIncidentDates(event)[0]?.number ||
+            (/\bINC\d{5,}\b/i.exec(JSON.stringify(event?.data ?? '')) || [])[0];
+          if (created) useCallsStore.getState().linkPromotedIncident(callUserKey(getIdentityEmail()), created);
+        }
+        // Mirror a voice-added WORK NOTE into the client comments store so it shows on the
+        // card like a typed comment (owner 2026-11-12, #4: "she said added but I can't see it").
+        // The update event carries only sys_id (no INC#), so attribute it to the incident
+        // currently on screen = the last one rendered. Fire once (on 'started'; 'completed' is
+        // skipped) so a single add is not double-posted.
+        if (tool === 'SN_Update_Record') {
+          const action = String((event as { action?: unknown })?.action ?? '');
+          if (action !== 'completed') {
+            // The agent adds a user's note via work_notes OR comments (proven in the log: it used
+            // `comments`, which my work_notes-only hook missed), and a close carries close_notes.
+            // Mirror whichever is present into the client comments store so it shows on the card
+            // (owner 2026-11-12: #3 comment + #5 closed-reason both "not showing"). close_notes is
+            // labelled as the resolution so a closed card finally shows WHY it was closed.
+            const wn = typeof args.work_notes === 'string' ? args.work_notes.trim() : '';
+            const cm = typeof args.comments === 'string' ? args.comments.trim() : '';
+            const cn = typeof args.close_notes === 'string' ? args.close_notes.trim() : '';
+            const note = wn || cm || (cn ? `Resolution: ${cn}` : '');
+            if (note) {
+              const num = lastRenderedIncident();
+              if (num) useVoiceSessionStore.getState().addIncidentComment(num, note);
+            }
+          }
+        }
+      } catch {
+        /* call capture is best-effort; never break the data-channel handler */
+      }
+
+      // Harvest created/updated timestamps from the raw payload. Runs on every
+      // incident tool event, independent of whether anything rendered — the
+      // auto-render path above dedupes itself away exactly when the Show LLM
+      // already drew the card, and those cards still need their dates.
+      try {
+        const dates = extractIncidentDates(event);
+        if (dates.length) {
+          set((state) => {
+            const merged = { ...state.incidentDates };
+            for (const { number, openedAt, updatedAt } of dates) {
+              const prev = merged[number];
+              merged[number] = {
+                openedAt: openedAt ?? prev?.openedAt,
+                updatedAt: updatedAt ?? prev?.updatedAt,
+              };
+            }
+            return { incidentDates: merged };
+          });
+          // One-glance verification signal — if the date columns show dashes
+          // but this line IS logging, the break is render-side; if it never
+          // logs, the events don't carry the rows.
+          console.info(`[incident-dates] harvested ${dates.length} record(s) from ${event.tool}`);
+        }
+      } catch (e) {
+        console.warn('extractIncidentDates failed:', e);
+      }
     } catch (err) {
       console.error('Error parsing tool-activity data:', err);
     }
@@ -1479,10 +2539,14 @@ function setupRoomEventListeners(
       updateAgentStateFromAttributes(participant, set, get);
 
       participant.on('attributesChanged', (changedAttributes) => {
-        if (
-          AGENT_STATE_ATTRIBUTE in changedAttributes ||
-          AGENT_NAME_ATTRIBUTE in changedAttributes
-        ) {
+        // Log every key, not just lk.agent.state. The agent can sit in
+        // `initializing` for anywhere between 1.3s and 29.8s (both measured on
+        // the same build), and during that window nothing is recorded. If the
+        // worker publishes any other attribute in the meantime this is what
+        // surfaces it; if the log stays silent, that is itself the finding, and
+        // it points at AWS agent cold start rather than at this client.
+        logEvent('agent', 'agent attributes changed', Object.keys(changedAttributes).join(','));
+        if (AGENT_STATE_ATTRIBUTE in changedAttributes) {
           updateAgentStateFromAttributes(participant, set, get);
         }
       });
@@ -1500,14 +2564,25 @@ function updateAgentStateFromAttributes(
   if (stateAttr) {
     const prev = get ? get().agentState : 'unknown';
     logAgentStateChange(prev, stateAttr);
+    if (prev === 'initializing' && stateAttr !== 'initializing') {
+      logEvent('lifecycle', `ROOM JOIN [4/4]: agent BOOTED (ready) ${joinElapsed()} after browser — all parts in, she can speak`);
+    }
     set({ agentState: stateAttr as AgentState });
-  }
-
-  // lk.agent.name — populated for multi-agent workflows. Empty/missing for
-  // single-agent sessions, in which case currentAgentName stays null.
-  const nameAttr = participant.attributes[AGENT_NAME_ATTRIBUTE];
-  if (nameAttr !== undefined) {
-    set({ currentAgentName: nameAttr || null });
+    // Release the create lock when the agent's turn ends. A 'listening' that
+    // follows the agent actually working means the turn is done, whether it
+    // created the incident or pushed back (e.g. "I need impact and urgency") -
+    // so the submit button un-greys either way, never stranding on the
+    // pushback path. See draftApproval.ts / beginCreateLock.
+    if (get) {
+      const st = get();
+      if (st.createInFlight) {
+        if (stateAttr === 'thinking' || stateAttr === 'speaking') {
+          _sawBusySinceCreate = true;
+        } else if (stateAttr === 'listening' && _sawBusySinceCreate) {
+          st.endCreateLock('turn-complete');
+        }
+      }
+    }
   }
 }
 
@@ -1545,13 +2620,20 @@ function registerRpcHandlers(
       console.log('RPC: setScene', payload);
       logRpcSetScene(payload);
 
+      const rpcCards = payload.cards || [];
+      if (rpcCards.length === 0) {
+        // Never blank a populated screen with an empty scene.
+        console.warn('RPC setScene: empty scene dropped — keeping current content');
+        return JSON.stringify({ success: true, dropped: 'empty-scene' });
+      }
+
       const sceneData: SceneData = {
         id: payload.id || `scene-${Date.now()}`,
         badge: payload.badge,
         title: payload.title,
         subtitle: payload.subtitle,
         layout: payload.layout,
-        cards: payload.cards || [],
+        cards: rpcCards,
         maxRows: payload.maxRows,
         footerLeft: payload.footerLeft,
         footerRight: payload.footerRight,
@@ -1561,7 +2643,7 @@ function registerRpcHandlers(
       set((state) => ({
         currentScene: sceneData,
         sceneActive: true,
-        sceneHistory: state.currentScene ? [...state.sceneHistory, state.currentScene] : state.sceneHistory,
+        sceneHistory: state.currentScene ? [...state.sceneHistory, state.currentScene].slice(-SCENE_HISTORY_MAX) : state.sceneHistory,
         sceneFuture: [],
       }));
 
@@ -1580,6 +2662,27 @@ function registerRpcHandlers(
     return JSON.stringify({ success: true });
   });
 
+  // Handler: Validate a record-creating tool call (backend site_tool_gate.py).
+  // Registering this flips the gate from fail-open (two incidents on 2026-11-08)
+  // to page-controlled: one armed approval per Create click, consumed by the
+  // first create, so a duplicate create in the same turn is refused and logged.
+  // On OUR handler error we allow passthrough rather than block a real create.
+  // Stopgap - see draftApproval.ts.
+  localParticipant.registerRpcMethod('validateToolCall', async (data) => {
+    try {
+      return handleValidateToolCall(data.payload);
+    } catch (error) {
+      console.error('RPC validateToolCall error:', error);
+      logEvent('rpc', `validateToolCall handler error - allowing passthrough: ${String(error)}`);
+      try {
+        const p = JSON.parse(data.payload || '{}');
+        return JSON.stringify({ allow: true, arguments: p.arguments || {} });
+      } catch {
+        return JSON.stringify({ allow: true });
+      }
+    }
+  });
+
   // Handler: Call site function
   localParticipant.registerRpcMethod('callSiteFunction', async (data) => {
     try {
@@ -1587,7 +2690,6 @@ function registerRpcHandlers(
       const { name, args } = payload;
       console.log('RPC: callSiteFunction', name, args);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const fn = (window as any).__siteFunctions?.[name];
       if (!fn) {
         logRpcCallSiteFunction(name, args, { error: `Unknown site function: ${name}` });

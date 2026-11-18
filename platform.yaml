@@ -10,6 +10,15 @@
 
 version: 1.1
 
+# ─── CSU Navigator note ────────────────────────────────
+# The voice, avatar, LLM, greeting, brain mode and tool-announcement settings
+# below are COMMENTED OUT on purpose: they are managed in the Mobeus dashboard.
+# Active values here would overwrite the dashboard on the next deploy (for
+# example turn the avatar off). Uncomment a field only to set it from the repo.
+# The prompt files in public/prompts/ are left empty for the same reason
+# (an empty file is ignored on deploy; the prompts live in the dashboard).
+
+
 # ─── Site Settings ──────────────────────────────────────
 site:
   # name: "My Business"      # Display name shown in dashboard
@@ -17,48 +26,48 @@ site:
   # greeting: "Welcome!"      # Greeting shown in the widget
 
 # ─── Widget Appearance ──────────────────────────────────
-widget:
-  position: bottom-right      # bottom-right | bottom-left | top-right | top-left
-  primaryColor: "#000000"     # Hex color for widget accent
+# widget:
+#   position: bottom-right      # bottom-right | bottom-left | top-right | top-left
+#   primaryColor: "#000000"     # Hex color for widget accent
 
 # ─── Voice Session Defaults ────────────────────────────
-defaults:
-  avatarEnabled: false
-  avatarVisible: true
-  micMuted: false
-  volumeMuted: false
+# defaults:
+#   avatarEnabled: false
+#   avatarVisible: true
+#   micMuted: false
+#   volumeMuted: false
 
 # ─── Agent / Voice Configuration ────────────────────────
 # These settings control the voice agent assigned to this website.
-agent:
+# agent:
   # greeting: "Hi there!"     # What the agent says first
 
-  llm:
-    provider: openai           # See platform-options.yaml for all providers
-    model: gpt-4o              # See platform-options.yaml for all models
-    temperature: 0.7           # 0.0 (deterministic) to 2.0 (creative)
+#   llm:
+#     provider: openai           # See platform-options.yaml for all providers
+#     model: gpt-4o              # See platform-options.yaml for all models
+#     temperature: 0.7           # 0.0 (deterministic) to 2.0 (creative)
 
-  voice:
-    provider: elevenlabs       # elevenlabs | cartesia | openai | google
+#   voice:
+#     provider: elevenlabs       # elevenlabs | cartesia | openai | google
     # voiceId: ""              # Provider-specific voice ID
     # voiceName: ""            # Human-readable voice name
     # model: ""                # TTS model (e.g. eleven_flash_v2_5)
     # style: ""                # google only: how every line is delivered, e.g. "warm and calm"
 
-  stt:
-    provider: deepgram         # deepgram | openai | assemblyai
-    language: en               # Language code (e.g. en, es, fr)
+#   stt:
+#     provider: deepgram         # deepgram | openai | assemblyai
+#     language: en               # Language code (e.g. en, es, fr)
 
-  behavior:
-    allowInterruptions: true
-    interruptionThreshold: 0.5 # 0.0 to 1.0 — raise for noisy environments
-    minInterruptionWords: 0    # 0 to 10 — ignore sounds shorter than N words
-    endpointingDelay: 0.5      # 0.0 to 3.0 seconds of silence = "user is done"
+#   behavior:
+#     allowInterruptions: true
+#     interruptionThreshold: 0.5 # 0.0 to 1.0 — raise for noisy environments
+#     minInterruptionWords: 0    # 0 to 10 — ignore sounds shorter than N words
+#     endpointingDelay: 0.5      # 0.0 to 3.0 seconds of silence = "user is done"
     # turnDetection: semantic  # semantic (default) waits for the end of a thought; vad = silence only
     # maxEndpointingDelay: 2.5 # 0.5 to 5.0 — longest wait when the user sounds unfinished
 
-  avatar:
-    enabled: false
+#   avatar:
+#     enabled: false
     # provider: liveavatar
     # avatarId: ""
 
@@ -75,19 +84,19 @@ agent:
   #     label: "expand acronym"
 
 # ─── Scene / UI Engine ─────────────────────────────────
-sceneGeneration:
-  brainMode: ONE_BRAIN         # ONE_BRAIN | TWO_BRAIN
-  uiEngine:
-    enabled: false
+# sceneGeneration:
+#   brainMode: ONE_BRAIN         # ONE_BRAIN | TWO_BRAIN
+#   uiEngine:
+#     enabled: false
     # model: gpt-4.1-nano      # LLM for UI generation (TWO_BRAIN only)
-    knowledgeMode: SEARCH      # SEARCH | CONTEXT
-  contextSharing:
-    shareVoiceContext: true     # Speak LLM shares with Show LLM (TWO_BRAIN only)
-    shareSceneContext: true     # Show LLM shares with Speak LLM (TWO_BRAIN only)
+#     knowledgeMode: SEARCH      # SEARCH | CONTEXT
+#   contextSharing:
+#     shareVoiceContext: true     # Speak LLM shares with Show LLM (TWO_BRAIN only)
+#     shareSceneContext: true     # Show LLM shares with Speak LLM (TWO_BRAIN only)
 
 # ─── Tool Announcements ────────────────────────────────
-toolAnnouncement:
-  mode: SPEECH                 # SILENT | SPEECH
+# toolAnnouncement:
+#   mode: SPEECH                 # SILENT | SPEECH
   # phrases:                   # Custom announcement phrases
   #   - "Let me look that up..."
   #   - "One moment..."

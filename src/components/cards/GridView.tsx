@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { SlideLayout } from '@/components/layout/SlideLayout';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { resolveFooters } from '@/utils/footerResolver';
 import { informTele } from '@/utils/informTele';
 import type { CardDef } from '@/types/cards';
@@ -17,7 +18,15 @@ import {
     // Comparison (2)
     ComparisonTable, RankedListCard,
     // Operational (3)
-    IncidentCard, PipelineCard, RiskMatrixCard,
+    IncidentCard, IncidentTable, IncidentDraftCard, KBSuggestionCard, ResolvePage, PipelineCard, RiskMatrixCard,
+    // Interactive question template
+    QuestionCard,
+    // Feedback survey card
+    SurveyCard,
+    // "View Calls" list card
+    CallsListCard,
+    // Incident lookup input card
+    LookupCard,
     // Executive Action (2)
     DecisionCard, DelegationCard,
     // Cross-Domain Intelligence (4)
@@ -73,6 +82,13 @@ const CARD_MAP: Record<string, React.FC<any>> = {
     'ranked-list': RankedListCard,
     // Operational (3)
     'incident-card': IncidentCard,
+    'incident-draft': IncidentDraftCard,
+    'kb-suggestion': KBSuggestionCard,
+    'resolve-page': ResolvePage,
+    'question-card': QuestionCard,
+    'survey-card': SurveyCard,
+    'calls-list-card': CallsListCard,
+    'lookup-card': LookupCard,
     'pipeline-card': PipelineCard,
     'pipeline': PipelineCard,       // alias — parseDSL emits 'pipeline', not 'pipeline-card'
     'risk-matrix': RiskMatrixCard,
@@ -107,6 +123,13 @@ const CARD_SIZE: Record<string, number> = {
     'bar-chart': 3, 'donut': 3, 'line-chart': 3, 'table': 3,
     'heatmap': 3, 'waterfall': 3, 'stacked-bar': 3,
     'comparison-table': 3, 'incident-card': 3, 'risk-matrix': 3,
+    'incident-draft': 3,
+    'kb-suggestion': 3,
+    'resolve-page': 3,
+    'question-card': 3,
+    'survey-card': 3,
+    'calls-list-card': 3,
+    'lookup-card': 3,
     // Executive Action
     'decision-card': 2, 'delegation-card': 2,
     // Cross-Domain Intelligence
@@ -145,10 +168,14 @@ function renderCard(card: CardDef, index: number) {
     // Strategy: merge both — nestedProps as base, flatProps override.
     // Certified slides use nested; LLM should use flat (saves ~3 tokens/card).
     const { type: _t, span: _s, borderless: _b, props: nestedProps, ...flatProps } = card;
-    const effectiveProps = { ...(nestedProps || {}), ...flatProps };
+    const effectiveProps: Record<string, unknown> = { ...(nestedProps || {}), ...flatProps };
     const content = <Component key={index} {...effectiveProps} />;
+    // Entry stagger, capped: index*100ms meant a 10-card list finished
+    // animating ~1.5s after its data had already arrived. 40ms×5 keeps the
+    // cascade feel while the whole grid settles inside half a second.
+    const enterDelay = `${Math.min(index, 5) * 40}ms`;
     // Card types that always render without the glass box wrapper
-    const BORDERLESS = new Set(['kpi-strip']);
+    const BORDERLESS = new Set(['kpi-strip', 'incident-card', 'incident-draft', 'question-card', 'survey-card', 'calls-list-card', 'lookup-card', 'kb-suggestion', 'resolve-page', 'product-carousel', 'product-categories', 'product-detail']);
     // These card types get the glass border + bg but NO internal padding (flush fill)
     const FLUSH_ROUNDED = new Set(['image-card', 'alert']);
     if (BORDERLESS.has(card.type) || card.borderless) return content;
@@ -160,14 +187,16 @@ function renderCard(card: CardDef, index: number) {
                 borderRadius: '0.75rem',
                 backdropFilter: 'blur(var(--theme-card-blur))',
                 animation: 'card-enter 0.5s ease both',
-                animationDelay: `${index * 100}ms`,
+                animationDelay: enterDelay,
             }}>
                 {content}
             </div>
         );
     }
     return (
-        <div className="card-glass h-full" style={{ animationDelay: `${index * 100}ms` }}>
+        // dx-card so the card-glass cards (e.g. the error info-card) toggle with the
+        // seam frost like every borderless card does (2026-09-18, owner).
+        <div className="dx-card card-glass h-full" style={{ animationDelay: enterDelay }}>
             {content}
         </div>
     );
@@ -376,6 +405,18 @@ function parseLayout(layout: string, cardCount: number, maxRows: number = 3): Pa
         return { mode: 'row', gridClass: colClass, isHybrid: false, rows: [], clampCount };
     }
 
+    // Bare integer: "1", "2", "3" → N-column grid covering all cards.
+    // The LLM frequently writes `layout: 1` to mean "stack everything in one column",
+    // so honour that intent instead of falling through to the 2-col auto-detect.
+    const intMatch = layout.match(/^(\d)$/);
+    if (intMatch) {
+        const cols = parseInt(intMatch[1]);
+        const colClass = cols === 1 ? 'grid-cols-1'
+            : cols === 2 ? 'grid-cols-1 md:grid-cols-2'
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        return { mode: 'row', gridClass: colClass, isHybrid: false, rows: [], clampCount: undefined };
+    }
+
     // Fallback: auto-detect based on card count
     const autoCols = cardCount <= 2 ? 1 : cardCount <= 4 ? 2 : 3;
     const colClass = autoCols === 1 ? 'grid-cols-1'
@@ -404,16 +445,45 @@ const CardSkeleton: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
 
 export const GridView: React.FC<GridViewProps> = ({
     badge,
-    layout = '2x2',
+    layout,
     cards = [],
     maxRows = 3,
     onLogoClick,
 }) => {
     const isMobile = useIsMobile();
-    const { mode, gridClass, isHybrid, rows, clampCount, resolvedLayout, cols, mosaicTemplate, mosaicName } = parseLayout(layout, cards.length, maxRows);
+    // Default to auto-detect so single-card scenes use grid-cols-1 instead of
+    // sitting in half a 2x2 grid. parseLayout's fallback picks 1/2/3 cols
+    // based on card count when layout is empty.
+    const effectiveLayout = layout && layout.trim() ? layout : '';
+    const { mode, gridClass, isHybrid, rows, clampCount, resolvedLayout, cols, mosaicTemplate, mosaicName } = parseLayout(effectiveLayout, cards.length, maxRows);
 
     // For CxR simple grids, clip cards to exactly cols×rows to prevent viewport overflow
-    const displayCards = clampCount != null ? cards.slice(0, clampCount) : cards;
+    const clippedCards = clampCount != null ? cards.slice(0, clampCount) : cards;
+
+    // Incident dates never survive the DSL — the incident-card row has 11 fields
+    // and no date slot — so they're harvested from raw tool payloads into the
+    // store and stitched back on here. Doing it at this seam covers BOTH
+    // consumers below: the IncidentTable branch and renderCard's prop spread
+    // (which feeds IncidentCard's existing "Created on" / "Updated on" rows).
+    // A date already on the card always wins.
+    const incidentDates = useVoiceSessionStore((s) => s.incidentDates);
+    const displayCards = useMemo(() => {
+        if (!clippedCards.some(c => c.type === 'incident-card')) return clippedCards;
+        return clippedCards.map((card) => {
+            if (card.type !== 'incident-card') return card;
+            const num = (card.number ?? card.props?.number) as string | undefined;
+            const dates = num ? incidentDates[num] : undefined;
+            if (!dates) return card;
+            return {
+                ...card,
+                openedAt: card.openedAt ?? card.props?.openedAt ?? dates.openedAt,
+                updatedAt: card.updatedAt ?? card.props?.updatedAt ?? dates.updatedAt,
+            };
+        });
+    }, [clippedCards, incidentDates]);
+
+    // Multi-incident scene → short-circuits below into the IncidentTable view.
+    const incidentListVariant = displayCards.filter(c => c.type === 'incident-card').length >= 2;
 
     // Layout mismatch validation — moved to useEffect to avoid side effects during render
     // Uses a ref so the same layout:count combo doesn't fire repeatedly, but resets when layout/cards change
@@ -425,7 +495,7 @@ export const GridView: React.FC<GridViewProps> = ({
 
         // Hybrid layout mismatch
         if (isHybrid && rows.length > 0 && cards.length > 0) {
-            const originalRows = layout.includes('-') ? layout.split('-').map(Number) : rows;
+            const originalRows = layout && layout.includes('-') ? layout.split('-').map(Number) : rows;
             const expectedCount = originalRows.reduce((a, b) => a + b, 0);
             if (cards.length !== expectedCount) {
                 lastReportedMismatchRef.current = currentKey;
@@ -470,20 +540,14 @@ export const GridView: React.FC<GridViewProps> = ({
         }
     }, [layout, cards.length, isHybrid, rows, clampCount, resolvedLayout]);
 
-    const [showSkeleton, setShowSkeleton] = useState(true);
     const { left: footerLeft, right: footerRight } = resolveFooters(badge);
-    const cardsKey = useRef(displayCards.map(c => c.type).join(','));
 
-    useEffect(() => {
-        // When cards change, show skeleton for 250ms
-        const newKey = displayCards.map(c => c.type).join(',');
-        if (newKey !== cardsKey.current) {
-            cardsKey.current = newKey;
-            setShowSkeleton(true);
-        }
-        const timer = setTimeout(() => setShowSkeleton(false), 250);
-        return () => clearTimeout(timer);
-    }, [displayCards]);
+    // No artificial skeleton here: by the time GridView renders, the card data
+    // is already in props — a forced 250ms shimmer on every cards change only
+    // ADDED latency, and multiplied whenever the same scene arrived twice
+    // (Speak renderScene + Show LLM + auto-render safety net all repaint it).
+    // Genuine waiting states are covered elsewhere: SceneManager's
+    // skeletonLayout before data exists, and the nav-pending overlay below.
 
     /* ═══ EMPTY CARDS GUARD (fix #10) ═══ */
     if (displayCards.length === 0) {
@@ -491,6 +555,38 @@ export const GridView: React.FC<GridViewProps> = ({
             <SlideLayout badge={badge} footerLeft={footerLeft || ''} footerRight={footerRight || ''} onLogoClick={onLogoClick}>
                 <div className="flex-1 flex items-center justify-center" style={{ color: 'rgba(255,255,255,0.2)' }}>
                     <span className="font-data text-base uppercase tracking-widest">Awaiting data…</span>
+                </div>
+            </SlideLayout>
+        );
+    }
+
+    /* ═══ INCIDENT LIST — table view (desktop + mobile) ═══ */
+    if (incidentListVariant) {
+        const tableRows = displayCards
+            .filter(c => c.type === 'incident-card')
+            .map(c => {
+                const { props: nested, ...flat } = c as CardDef & { props?: Record<string, unknown> };
+                const p: Record<string, unknown> = { ...(nested || {}), ...flat };
+                return {
+                    number: p.number as string | undefined,
+                    title: (p.title ?? p.short_description) as string | undefined,
+                    state: p.state as string | undefined,
+                    priority: p.priority as string | undefined,
+                    severity: p.severity as string | undefined,
+                    createdAt: (p.openedAt ?? p.sys_created_on ?? p.opened_at) as string | undefined,
+                    updatedAt: (p.updatedAt ?? p.updated_at ?? p.sys_updated_on) as string | undefined,
+                    sysId: (p.sysId ?? p.sys_id) as string | undefined,
+                };
+            });
+        return (
+            <SlideLayout
+                badge={badge}
+                footerLeft={footerLeft || ''}
+                footerRight={footerRight || ''}
+                onLogoClick={onLogoClick}
+            >
+                <div className="flex-1 min-h-0">
+                    <IncidentTable rows={tableRows} />
                 </div>
             </SlideLayout>
         );
@@ -517,18 +613,11 @@ export const GridView: React.FC<GridViewProps> = ({
                             </div>
                         ))}
                     </div>
-                    {showSkeleton
-                        ? displayCards.map((card, i) => (
-                            <div key={`${card.type}-${i}`} className="w-full" style={{ minHeight: '120px' }}>
-                                <CardSkeleton delay={i * 50} />
-                            </div>
-                        ))
-                        : displayCards.map((card, i) => (
-                            <div key={`${card.type}-${i}`} className="w-full" style={{ minHeight: card.type === 'kpi-strip' ? 'auto' : '120px' }}>
-                                {renderCard(card, i)}
-                            </div>
-                        ))
-                    }
+                    {displayCards.map((card, i) => (
+                        <div key={`${card.type}-${i}`} className="w-full" style={{ minHeight: card.type === 'kpi-strip' ? 'auto' : '120px' }}>
+                            {renderCard(card, i)}
+                        </div>
+                    ))}
                 </div>
             </SlideLayout>
         );
@@ -729,22 +818,9 @@ export const GridView: React.FC<GridViewProps> = ({
                     )}
                 </div>
 
-                {showSkeleton ? (
-                    <div className={`grid ${gridClass} gap-3 md:gap-4 flex-1 min-h-0`}
-                        style={{ gridAutoRows: '1fr', alignItems: 'stretch' }}>
-                        {displayCards.map((card, i) => (
-                            <div key={`${card.type}-${i}`} className={`min-h-0 h-full ${card.span === 'full' ? 'col-span-full' : ''}`}>
-                                <CardSkeleton delay={i * 50} />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <>
-                        {mode === 'vertical' && renderVerticalLayout()}
-                        {mode === 'mosaic' && renderMosaicLayout()}
-                        {mode === 'row' && renderRowLayout()}
-                    </>
-                )}
+                {mode === 'vertical' && renderVerticalLayout()}
+                {mode === 'mosaic' && renderMosaicLayout()}
+                {mode === 'row' && renderRowLayout()}
             </div>
         </SlideLayout>
     );

@@ -21,85 +21,96 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  /* Scene card font families */
-  --font-data: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-  --font-voice: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-hero: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  /* Scene card font families — Henkel uses Open Sans */
+  --font-data: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-voice: 'Open Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-hero: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
   /* Accent color */
   --color-amber: var(--amber);
 }
 
 :root {
-  --background: oklch(0.145 0.01 256);
-  --foreground: oklch(0.93 0 0);
-  --card: oklch(0.17 0.01 256);
-  --card-foreground: oklch(0.93 0 0);
-  --popover: oklch(0.17 0.01 256);
-  --popover-foreground: oklch(0.93 0 0);
-  --primary: oklch(0.85 0.15 195);
-  --primary-foreground: oklch(0.145 0.01 256);
-  --secondary: oklch(0.22 0.01 256);
-  --secondary-foreground: oklch(0.93 0 0);
-  --muted: oklch(0.22 0.01 256);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.22 0.01 256);
-  --accent-foreground: oklch(0.93 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.3 0.01 256);
-  --input: oklch(0.3 0.01 256);
-  --ring: oklch(0.75 0.15 195);
-  --radius: 0.625rem;
+  --background: #FFFFFF;
+  --foreground: #041E42;
+  --card: #FFFFFF;
+  --card-foreground: #041E42;
+  --popover: #FFFFFF;
+  --popover-foreground: #041E42;
+  --primary: #041E42;
+  --primary-foreground: #FFFFFF;
+  --secondary: rgba(4, 30, 66, 0.05);
+  --secondary-foreground: #041E42;
+  --muted: rgba(4, 30, 66, 0.08);
+  --muted-foreground: rgba(4, 30, 66, 0.6);
+  --accent: rgba(4, 30, 66, 0.05);
+  --accent-foreground: #041E42;
+  --destructive: #FF0000;
+  --border: rgba(4, 30, 66, 0.1);
+  --input: rgba(4, 30, 66, 0.05);
+  --ring: #041E42;
+  --radius: 0px;
 
-  /* ── Color Palette ── */
-  --color-midnight: #0a0e14;
-  --amber: #00e5ff;
-  /* Derived from --amber; the Studio rewrites all four together
-     (lib/studio/theme.ts) when the owner picks an accent. */
-  --accent-hover: #33ebff;
-  --accent-rgb: 0 229 255;
-  --accent-ink: #0a0e14;
+  /* ── Color Palette (Georgetown) ── */
+  --color-midnight: #FFFFFF;
+  --amber: #041E42;
 
-  /* ── Scene Card Theme — Dark ── */
-  --theme-chart-line: rgba(255, 255, 255, 0.92);
-  --theme-card-data: rgba(255, 255, 255, 0.92);
-  --theme-card-voice: rgba(255, 255, 255, 0.80);
-  --theme-card-bg: rgba(255, 255, 255, 0.10);
-  --theme-card-border: rgba(255, 255, 255, 0.12);
+  /* ── Glass Theme ── */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(4, 30, 66, 0.1);
+  --glass-highlight: rgba(4, 30, 66, 0.05);
+
+  /* ── Scene cards — Georgetown navy ── */
+  --theme-chart-line: rgba(4, 30, 66, 0.92);
+  --theme-card-data: rgba(4, 30, 66, 0.92);
+  --theme-card-voice: rgba(4, 30, 66, 0.75);
+  --theme-card-bg: rgba(4, 30, 66, 0.04);
+  --theme-card-border: rgba(4, 30, 66, 0.10);
   --theme-card-blur: 4px;
-  --theme-card-title: #ffffff;
+  --theme-card-title: #041E42;
 
   /* Scene page-level */
-  --theme-scene-bg: rgba(5, 5, 8, 0.95);
-  --theme-scene-text: #ffffff;
-  --theme-scene-text-muted: #94a3b8;
-  --theme-scene-badge-bg: rgba(255, 255, 255, 0.1);
-  --theme-scene-badge-text: rgba(255, 255, 255, 0.7);
-  --theme-scene-footer: rgba(255, 255, 255, 0.6);
+  --theme-scene-bg: rgba(255, 255, 255, 0.95);
+  --theme-scene-text: #041E42;
+  --theme-scene-text-muted: rgba(4, 30, 66, 0.6);
+  --theme-scene-badge-bg: rgba(4, 30, 66, 0.06);
+  --theme-scene-badge-text: rgba(4, 30, 66, 0.7);
+  --theme-scene-footer: rgba(4, 30, 66, 0.6);
 
   /* Action buttons */
-  --theme-action-btn: rgba(255, 255, 255, 0.5);
-  --theme-action-btn-hover: rgba(255, 255, 255, 0.8);
+  --theme-action-btn: rgba(4, 30, 66, 0.5);
+  --theme-action-btn-hover: rgba(4, 30, 66, 0.85);
 
   /* Chat bubbles */
-  --theme-chat-bubble: rgba(12, 14, 18, 0.85);
-  --theme-chat-text: #e0e0e0;
-  --theme-chat-placeholder: rgba(255, 255, 255, 0.3);
+  --theme-chat-bubble: rgba(255, 255, 255, 0.92);
+  --theme-chat-text: #041E42;
+  --theme-chat-placeholder: rgba(4, 30, 66, 0.4);
 
   /* Video filter */
-  --theme-video-brightness: 0.72;
-  --theme-video-saturate: 0.9;
+  --theme-video-brightness: 1;
+  --theme-video-saturate: 1;
 
   /* KPI & badges */
-  --theme-kpi-text: #ffffff;
-  --theme-badge-bg: rgba(255, 255, 255, 0.85);
-  --theme-badge-text: #ffffff;
-  --theme-footer-text: rgba(255, 255, 255, 0.6);
+  --theme-kpi-text: #041E42;
+  --theme-badge-bg: rgba(4, 30, 66, 0.08);
+  --theme-badge-text: #041E42;
+  --theme-footer-text: rgba(4, 30, 66, 0.6);
+
+  /* ── Brand tokens (CSU colours; the --henkel-* names are kept so every component keeps working) ── */
+  --henkel-red: #C91235;
+  --henkel-red-hover: #A00E2A;
+  --henkel-ink: #1A1A1A;
+  --henkel-ink-muted: #5A5A5A;
+  --henkel-surface: #FFFFFF;
+  --henkel-surface-alt: #F5F7FA;
+  --henkel-border: #E5E7EB;
+  --henkel-success: #16A34A;
+  --henkel-elevation: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* ── Body background ── */
+/* ── Body background ── enterprise neutral */
 body {
-  background-color: var(--color-midnight);
-  color: #e0e0e0;
+  background-color: #F5F7FA;
+  color: #1A1A1A;
   transition: background-color 0.6s ease, color 0.6s ease;
 }
 
@@ -113,6 +124,567 @@ body {
    IMMERSIVE LAYOUT — Glass Chat Panel, Squeeze, Sleep, Pulse
    ══════════════════════════════════════════════════════════════ */
 
+/* ── App Chrome Heights ──
+   Single source of truth for the fixed top chrome. AppHeader is --app-header-h
+   tall; the persistent Proof-of-Concept banner sits directly beneath it and is
+   --poc-banner-h tall. Every layout that must clear the chrome reads
+   --app-chrome-h, so the banner can never silently overlap content. */
+/* ── One horizontal padding for EVERY scene ──
+   The landing hero used `px-6 md:px-10 lg:px-16` (up to 64px) while
+   SceneManager used a flat `px-6` (24px), so Home sat about 2cm further in than
+   the incident list and the KB results. One token, read by both. */
+:root {
+  --scene-pad-x: clamp(1.25rem, 2.2vw, 2.25rem);
+}
+.scene-pad-x { padding-left: var(--scene-pad-x); padding-right: var(--scene-pad-x); }
+
+:root {
+  /* 60px, up from 56: the PoC warning and the privacy link were folded INTO
+     this row, so it carries more than branding now. */
+  --app-header-h: 60px;
+  /* 0px as of 2026-09-02: the banner row was merged into the header row, which
+     returns its 28px to the content grid. The variable stays because
+     --app-chrome-h is read by ChatPanel and by the room/avatar maths. */
+  --poc-banner-h: 0px;
+  --app-chrome-h: calc(var(--app-header-h) + var(--poc-banner-h));
+  /* 0px as of 2026-09-02: the footer row was DELETED and its 32px given back to
+     the content grid. It held nothing but a copyright string and a duplicate of
+     the header title, both now in the header. The variable survives because
+     ChatPanel still computes its height as
+     `calc(100dvh - var(--app-chrome-h) - var(--app-footer-h))`, and ChatPanel is
+     deliberately untouched this phase. */
+  --app-footer-h: 0px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE SHELL (2026-09-02)
+   ══════════════════════════════════════════════════════════════
+
+   ONE grid owns both columns and all four rows. Nothing is pinned to the
+   viewport any more, so content and avatar scale together under browser zoom,
+   viewport size and device pixel ratio.
+
+   What this replaced, and why:
+
+   `--avatar-w` used to be declared here as `min(42vw, 640px)`, widened to
+   `min(50vw, 980px)` above 1025px. SceneManager reserved space for it with a
+   HARDCODED `paddingRight: 'min(42vw, 640px)'` that never got the second step.
+   Above 1025px the avatar therefore occupied up to 980px while content stepped
+   aside for only 640px, and up to 340px of content painted underneath it. That
+   was the bleed. Hand-tuning browser zoom "fixed" it only by moving the
+   viewport across the crossover point where the two expressions happen to
+   agree. A single grid track cannot disagree with itself, so the whole class
+   of bug is gone rather than retuned.
+
+   The desktop overflow lock (`html, body { height:100dvh; overflow:hidden }`
+   above 1024px) also lived here. With no page-level scroll and a fixed frame,
+   any list taller than the frame was simply clipped. Scrolling now belongs to
+   the content cell, which is the only element that should ever scroll. */
+
+/* ── The three tunables ──
+   All relative, so zoom / DPR / viewport move them together.
+
+   --avatar-col-w    width of the right-hand grid column.
+   --room-h          height of the room plate inside that column. Height-driven
+                     (`background-size: auto var(--room-h)`) keeps the room tall
+                     behind her instead of a short band. Lower it to shrink the
+                     room overall.
+   --avatar-shift-x  ONE offset applied identically to the room layer and the
+                     keyed avatar, so they can never drift apart. It pushes the
+                     empty right margin of the avatar frame off-screen so she
+                     reaches the true right edge while staying on the couch.
+                     ~158px on a 1440 laptop, inside the 180px prototype value,
+                     but it scales instead of freezing. */
+:root {
+  /* Tightened 2026-09-02 from clamp(16rem, 34vw, 38rem). The column was much
+     wider than the avatar drew into, leaving dead space between the content and
+     her. The width freed here goes straight to the content column, which is the
+     1fr track. */
+  /* Ceiling is 40rem, not 32rem. With `cover` the avatar's scale is driven by
+     the COLUMN HEIGHT (max(w/1280, h/720), and h/720 dominates a tall column),
+     so on a 2560x1440 screen she renders ~588px wide against a 512px column and
+     her shoulders crop. Widening the ceiling gives her room without changing
+     1280 or 1920, where 26vw is below the cap and the gap fix still applies. */
+  /* Height-aware, applied verbatim 2026-09-02. The `min()` is the point: it
+     stops the column growing wider than her HEIGHT can use, so a short window
+     does not spend content width on headroom she cannot fill. 32vw is the
+     width-driven term, the calc is the height-driven one, and 116px is the
+     chrome above her (56 header + 28 banner, plus a little slack now the footer
+     row is gone). */
+  /* 2026-09-19 (owner, from the measured layout sample: content cell right = 932,
+     avatar cell left = 932, gap = one coin). +2rem widens Col2 by one coin (2rem =
+     one `.btn-coin`), moving its LEFT edge left by a coin so the strip controls and
+     the shroud follow it left, and giving the strip room for a dead-centre zoom.
+     Paired with --avatar-shift-x below (avatar also moved left a coin). */
+  --avatar-col-w: calc(clamp(14rem, min(32vw, calc(0.92 * (100dvh - 116px))), 40rem) + 2rem);
+
+  /* Room plate scale. `background-size: auto var(--room-h)` is height-driven.
+     Note the direction of this control: at 100% the plate's FULL vertical extent
+     already fills the cell, so raising it enlarges and CROPS the plate rather
+     than revealing more of it. Back to 100% because the avatar is no longer
+     over-magnified, so the room does not need to grow to match it. */
+  --room-h: 100%;
+
+  /* ONE offset applied identically to the room plate and every avatar layer, so
+     they cannot drift apart.
+
+     DEFAULT 0. It was clamp(2rem, 8vw, 10rem), which was correct while the
+     avatar frame was anchored `right bottom` and needed its empty right margin
+     pushed off-screen. Now that both layers are anchored `center bottom`, a
+     positive shift pushes HER off the right edge instead: at 1280 it was +102px
+     against a 333px column, which is exactly the cropped-in-half avatar in the
+     live screenshot. Tune it up only after the debug panel confirms where she
+     actually sits in the frame.
+
+     2026-09-11: NEGATIVE now, small. The measured centre is 0.509 (a hair right),
+     so -8px slides the visible window left to centre on her, which is what lets
+     --avatar-scale go to 1.95 without the right shoulder binding first. With the
+     room OFF (default) this moves only the avatar; with the room ON it moves the
+     plate too, by the same 8px, so they still cannot drift apart.
+
+     2026-09-16 (owner, "move her a bit more left of Col2, show right shoulder"):
+     -8px -> -40px. More negative slides the visible window further left, so more of
+     her RIGHT shoulder comes into Col2 and her LEFT shoulder pushes further into
+     Col1, which also makes the left-bleed effect easier to see. Paired with a wider
+     --avatar-bleed-left so the shoulder is not re-clipped as she moves left. Tune
+     the two together live. */
+  /* 2026-09-19 (owner). -40 -> -72 closed the content-side gap but over-shot: she then
+     left a gap at the SCREEN edge on the right. Nudged back to -56 (a wee bit right)
+     so she overlaps the content on the left AND reaches the right edge. Single tune
+     knob if still off: +/- 16px per "wee bit". */
+  --avatar-shift-x: -56px;
+
+  /* Vertical nudge. 0 = flush with the bottom edge, which is how she has always
+     sat and what the owner confirmed on 2026-09-16 (the brief -16px lift was
+     reverted). The variable stays wired through BackgroundLayer (AVATAR_LAYER and
+     SHARED_SHIFT) so a future nudge is a one-line change, but the pills now stack
+     over her lap by design rather than needing her lifted off them. */
+  --avatar-shift-y: 0px;
+
+  /* Magnification of the CONTAINED avatar frame, anchored bottom-centre.
+     This is now the only control that makes her bigger.
+
+     Back to `object-fit: contain` after `cover` failed live. cover's crop
+     window depends on knowing where she sits inside the source frame, and that
+     position was MODELLED from the static plate rather than measured. The model
+     was wrong, and cover cropped her in half. contain cannot do that: its worst
+     case is transparent margin around a whole avatar, never a missing avatar.
+     A visible whole person beats a large half-person.
+
+     THE SAFETY RULE, because contain plus scale is not unconditionally safe
+     either and it would be dishonest to imply otherwise. The scaled frame is
+     `column_width * scale` wide while the column shows only `column_width`, so
+     the visible slice of the source frame is exactly 1/scale of its width,
+     centred:
+
+         scale 1.0  ->  100% of the frame visible, cropping IMPOSSIBLE
+         scale 1.5  ->   67%
+         scale 2.0  ->   50%
+         scale 2.4  ->   42%
+
+     She is safe at a given scale if she sits inside that central fraction.
+     2.0 keeps the central HALF of the frame visible, which is a reasonable bet
+     for a centred talking-head source and is a long way back from the 42% that
+     cropped her. It is a bet, not a measurement.
+
+     NO LONGER A BET. Measured live on 2026-09-02 across four session states
+     (disconnected, connected, incident list, KB query), all four agreeing:
+
+         frame       1280x720
+         boxFrac     left 0.256   right 0.756 to 0.769   width 0.500 to 0.506
+         centreXFrac 0.506 to 0.516
+
+     So she occupies the central half of the frame and sits a hair right of
+     centre. The visible window at scale S is [0.5 - 0.5/S, 0.5 + 0.5/S], and it
+     has to contain [0.256, 0.769]:
+
+         left  edge:  0.5 - 0.5/S <= 0.256  ->  S <= 2.049
+         right edge:  0.5 + 0.5/S >= 0.769  ->  S <= 1.859   <- binding
+
+     1.85 is that ceiling with a sliver of margin. At the 2.0 it replaced, the
+     window stopped at 0.750 while her right arm reached 0.769, so it was
+     clipping her by 1.9% of the frame. Visible in the incident-list capture.
+
+     She is not perfectly centred, which is why the right edge binds before the
+     left. Recentring buys back 1.85 -> ~1.97.
+
+     2026-09-11 (AT: "make bigger and higher"): took that recentring. With
+     --avatar-shift-x nudging her left so the window centres on her, the right
+     edge no longer binds first, so the scale ceiling opens to ~1.97 and 1.95
+     sits safely under it. This is a MODEST step (5% larger, ~24px less white
+     above the head): object-fit:contain letterboxes a 16:9 frame into a portrait
+     cell, so scale is a weak lever for the top gap. A real jump needs the cover
+     trial (LAULI A3), now unblocked by the measured centre. RE-MEASURE with
+     the debug panel (Ctrl+Shift+D) after this and confirm no shoulder clip on a
+     wide pose.
+
+     2026-09-14: default raised to 2.45, chosen live on the zoom chip ("occupies
+     the right column nicely tight"). This is PAST the ~2.0 no-clip ceiling, so the
+     outer arms trim a little; accepted by the owner for the tighter demo framing.
+     The live zoom chip still overrides this per browser (persisted). */
+  /* 2026-09-16: default eased to 2.35 (from 2.45) to give the always-on AI
+     disclaimer clean lap room together with the upward --avatar-shift-y. This is
+     the DEFAULT for a fresh browser only; a tester who already dialled the chip
+     keeps their persisted value, and the chip still overrides live. Settle after
+     the demo team sees it with the disclaimer in place. */
+  /* 2026-09-19 (owner): 2.45 -> 2.35. At 2.45 her hair/head reached up into the strip
+     and interfered with the zoom control; 2.35 lowers her a touch to clear it. Kept in
+     step with AVATAR_SCALE_DEFAULT in dev-flags-store.ts. Fresh-browser default only;
+     the persisted zoom chip still overrides per machine (so a tester already on 2.45
+     must nudge the chip to 2.35 or clear storage to see this). */
+  --avatar-scale: 2.35;
+
+  /* Left bleed: how far the avatar's LEFT overhang is allowed to spill PAST the
+     column boundary into the content column (Col1), so her left shoulder softens
+     into the page instead of being cut in a hard vertical line at the seam.
+     Consumed by `.avatar-clip` below.
+
+     0 = the old behaviour (hard clip exactly at the column edge, no spill).
+     Positive = that many px of her left side bleed into Col1. This is SAFE with
+     the current layout because the scene text and cards render at z-10 (see
+     SceneManager `<main class="relative z-10">`), which is above the avatar
+     layers (z:auto), so the shoulder bleeds BEHIND the text: Col1 text stays fully
+     visible and legible, the shoulder only fills the empty area to its right. The
+     content column has no opaque background of its own (the only page background
+     is the white base at z-index:-1 in BackgroundLayer), so nothing hides her.
+
+     Sizing: measured on the 2026-09-16 19:14 layout sample, her left shoulder
+     sits ~48px past the column edge on the tester's 1371px viewport, so ~64px
+     reveals the shoulder with a little margin. Useful range is roughly 40-90px:
+     below ~40 it still clips her shoulder, above ~90 only reveals transparent
+     keyed-out margin to the left of her (no further visual change). Tune live and
+     set to 0 to disable entirely. This is the ONE knob for the effect.
+
+     2026-09-16 (later): 64 -> 96 to pair with --avatar-shift-x -40px. As she moves
+     left her shoulder needs a wider clip window or it clips again at the seam; 96
+     keeps ~16px of margin past her left edge on the tester's viewport. If you dial
+     shift-x back toward -8, dial this back toward 64. */
+  /* 2026-09-19: 96 -> 128 (one coin wider) to match --avatar-shift-x -72. As she
+     moves a coin further left her shoulder enters Col1 a coin more, so the clip window
+     widens by the same coin or it would re-clip the shoulder at the seam. */
+  --avatar-bleed-left: 128px;
+}
+
+/* ── The shell ──
+   `overflow-x: clip` is load-bearing, not tidiness: --avatar-shift-x pushes the
+   avatar layers past the right edge on purpose, and without it that becomes a
+   page-level horizontal scrollbar. `clip` rather than `hidden` so the shell
+   does not become a scroll container and steal the content cell's scrolling. */
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--avatar-col-w);
+  /* TWO rows now. The footer `auto` went with the deleted footer row (32px
+     back), and the banner `auto` went when the PoC warning was folded into the
+     header row (another 28px back). Both went to the content row. */
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
+  width: 100%;
+
+  /* `overflow: clip` on BOTH axes, and this is the fix for the page scrollbar.
+     It was `overflow-x: clip` alone, which looks harmless and is not: per the
+     CSS overflow spec, when one axis is `clip` and the other is `visible`, the
+     `visible` axis computes to `auto`. So `overflow-x: clip` silently turned
+     overflow-y into `auto`, and the scaled avatar (taller than its cell, since
+     it grows from the bottom edge) then gave the PAGE a vertical scrollbar.
+     Clipping both axes removes it. The content cell keeps its own scrolling,
+     which is unaffected because it is a separate scroll container. */
+  overflow: clip;
+}
+.app-shell > .shell-header { grid-column: 1 / -1; }
+
+/* Status strip over the wall above her head: mic, disconnect, timer, account.
+   Overlays the avatar cell rather than taking a grid row, which is the whole
+   point (it reclaims space that was a header control row).
+
+   Headroom is `cell height - her rendered height` and it is NOT constant:
+   measured 112px at 1234x628, 353px on a Surface Pro 7, and only about 19px on
+   a 844x390 landscape phone. At owner direction the strip is NOT gated by a
+   height breakpoint: it stays put and simply overlaps on very short viewports,
+   to be observed with the debug panel (Ctrl+Shift+D) rather than pre-emptively hidden.
+   `pointer-events: auto` re-enables clicks, since `.shell-avatar` disables them
+   for the decorative layers. */
+.app-shell > .shell-avatar > .avatar-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  /* 2026-09-19: three-track grid so ZOOM sits dead-centre of the column (the auto
+     centre track), the LEFT group (mic/reconnect + speaker) holds the left edge, and
+     the RIGHT group (room/beep/blend + timer) holds the right corner. A grid, not
+     flex-with-percentages: my earlier absolute left:50%/75% collided the mid coins
+     with the timer (the "messed up icons"). The two 1fr side tracks keep the centre
+     honest and the groups cannot climb into it. Column widened by a coin above so the
+     right group fits its track. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  pointer-events: auto;
+}
+
+/* Session duration sits hard RIGHT, per review. `margin-left: auto` inside the
+   full-width strip does it without a second container.
+   It carries the same frosted pill as the engaged line: as bare text it was
+   unreadable once the room background was switched on, which is exactly what
+   review reported. */
+.avatar-strip .strip-duration {
+  margin-left: auto;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(4px);
+  padding: 0.2rem 0.5rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Strip groups placed by the three-track grid (owner 2026-09-19). Each group manages
+   its own coin spacing; the grid tracks decide where the three groups sit. Hiding or
+   adding a coin only changes a group's own width, never the others' positions. */
+.avatar-strip .strip-left {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.avatar-strip .strip-zoom {
+  justify-self: center;
+}
+.avatar-strip .strip-right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+/* "Connecting... 3.4s" while it ticks, then "Agent engaged in 4.1s" once the
+   stream is live. ALWAYS present so the connect cost stays visible rather than
+   vanishing on success. Sits ABOVE the disclaimer now (owner swap 2026-09-16):
+   the compliance disclaimer owns the very bottom, this status line sits over it. */
+.app-shell > .shell-avatar > .avatar-engaged {
+  position: absolute;
+  /* 2026-09-18: raised 2.6rem -> 3.3rem. The AI disclaimer grew ("…with Sarah, an
+     AI avatar…") and could wrap to two lines on a narrow column, climbing into this
+     "Connected in X.Xs" pill. More gap keeps the disclaimer pinned to the bottom and
+     clear of this line, which stays put. */
+  bottom: 3.3rem;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+/* Idle "Disconnecting in Ns / Stay connected" prompt. Pinned over the AVATAR
+   COLUMN, per review: that is where the session controls live, and centring it
+   over the content column meant a user typing in the incident box never saw it
+   before it timed out. Width tracks the avatar column so it sits squarely in it;
+   `max-width` keeps it on-screen on a narrow viewport where the column is
+   dropped. Sits above the engaged line, which owns the very bottom. */
+.lifecycle-countdown {
+  position: fixed;
+  right: 0;
+  /* 2026-09-21: 4.25rem -> 5.75rem. The DEPENDENT change I missed: the engaged
+     "Connected in X.Xs" line was raised to bottom 3.3rem for the "…with Sarah…"
+     disclaimer, and the Extend card (which grows UP from its bottom) then overlapped
+     it. Lifting the Extend card's bottom clears the engaged line beneath it. */
+  bottom: 5.75rem;
+  width: var(--avatar-col-w);
+  max-width: calc(100vw - 1.5rem);
+  z-index: 150;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+}
+.lifecycle-countdown-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 15rem;
+  border-radius: 0.75rem;
+  border: 1px solid #F7C5CA;
+  background: #FFFFFF;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  pointer-events: auto;
+  text-align: center;
+}
+
+.avatar-engaged > span {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(4px);
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #1A1A1A;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+/* Always-on EU AI disclaimer (2026-09-16). A small frosted pill at the VERY
+   bottom of the avatar cell (owner swap 2026-09-16: disclaimer near the bottom,
+   the status line above it), so the compliance notice is the most prominent of
+   the two. Present in every state (idle, connecting, live, offline) so the notice
+   is never absent. Henkel red to catch the eye without dominating. Presentational
+   only. */
+.app-shell > .shell-avatar > .avatar-disclaimer {
+  position: absolute;
+  /* 2026-10-10 (owner): dropped 0.75rem -> 0.4rem so the (now longer, two-sentence)
+     notice sits lower and does not climb into the "connected" chip above it. */
+  bottom: 0.4rem;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.75rem;
+  pointer-events: none;
+}
+/* 2026-10-10 (owner): the frosted pill ("chip") was too long/fat/multi-line once the
+   recording notice was added. Now plain italic fine print: no chip box, small, light,
+   with a soft halo so it stays legible over the avatar (the lap area keys to white). */
+.avatar-disclaimer > span {
+  max-width: calc(100% - 1.5rem);
+  font-family: var(--font-data);
+  font-size: 9.5px;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-align: center;
+  color: #8A1016;
+  /* 2026-10-12 (owner): plain fine-print was unreadable over the avatar, so a
+     light frosted strip is back for contrast — thinner/softer than the old fat
+     pill (small padding, no border), just enough to lift the text off the video. */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(3px);
+  padding: 0.12rem 0.6rem;
+  border-radius: 5px;
+}
+
+/* `minmax(0, 1fr)` on the row above and `min-width: 0` here are the pair that
+   stops a wide incident table from blowing the track out. Without them a grid
+   item's automatic minimum size is its CONTENT size, the 1fr track grows past
+   the viewport, and the page gets a horizontal scrollbar no overflow rule can
+   reach. Scrolling lives here and nowhere else. */
+.app-shell > .shell-content {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  /* `auto`, not `hidden`. A genuinely wide incident table has to stay reachable,
+     and clipping it inside the column loses the right-hand columns with no way
+     to get at them. Scrolling it HERE keeps it reachable while still never
+     producing a page-level horizontal scrollbar, which is what the requirement
+     actually asks for. */
+  overflow-x: auto;
+}
+
+/* The avatar cell. `position: relative` makes it the containing block for the
+   two absolutely-positioned layers inside BackgroundLayer, which is what lets
+   them fill the COLUMN rather than the viewport. */
+.app-shell > .shell-avatar {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+  /* NO clip-path here any more. It used to sit on this element and it clipped
+     the account menu: the menu opens leftward from the strip, straight into the
+     region `inset(0 -100vmax 0 0)` cuts away, so "…@example.com" was sliced in
+     half and the Sign out row was invisible. That is what "goofy menu, no way
+     to logout" was.
+     The clip now lives on `.avatar-clip`, which wraps only the decorative
+     layers, so the strip and its popups are outside it. */
+}
+
+/* The clipped region: room plate and avatar layers only.
+   Clips the LEFT edge. Scaling the avatar up makes its box wider than the column
+   on both sides. Historically the FULL left overhang painted over the content
+   column while the avatar width and the content's reserved width disagreed, and
+   the content text had no z-index to stay above it, so the overhang buried the
+   text: that was the old bleed BUG, removed by clipping the left at exactly 0.
+
+   2026-09-16 (owner, "avatar should bleed"): a SMALL, deliberate left spill is
+   now wanted, the opposite intent from the old bug. The difference that makes it
+   safe: scene text and cards render at z-10 (SceneManager `<main class="relative
+   z-10">`), above the avatar layers (z:auto), so the shoulder bleeds BEHIND the
+   text rather than over it. So instead of clipping the left at 0 we clip it at
+   -(--avatar-bleed-left), letting exactly that many px of her left shoulder enter
+   Col1 while the text stays on top and Col1's transparent background reveals her.
+   Set --avatar-bleed-left to 0 to restore the old hard clip. The negative right
+   inset is unchanged so --avatar-shift-x still works; `overflow: hidden` cannot do
+   this because it would clip the right shift too. */
+.app-shell > .shell-avatar > .avatar-clip {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 -100vmax 0 calc(-1 * var(--avatar-bleed-left)));
+}
+
+/* The avatar column is dropped only on genuinely tiny viewports (below 40rem /
+   640px), NOT at the 64rem desktop threshold.
+
+   Dropping it at 64rem was the first attempt and it was wrong: a landscape
+   phone at 844x390 and a 1280 laptop at 150% zoom both land under 1024px, and
+   both lost the avatar completely. The requirement is that a landscape device
+   gets the real UI scaled down, not a different UI, so the clamp floor
+   (`16rem`) does the scaling and the breakpoint only catches the case where a
+   256px column would leave no usable content beside it.
+
+   Portrait phones never reach this rule: `.rotate-gate` covers them. */
+@media (max-width: 39.99rem) {
+  .app-shell { grid-template-columns: minmax(0, 1fr); }
+  .app-shell > .shell-avatar { display: none; }
+}
+
+/* ── Fluid type ──
+   Scales with the viewport between a laptop and a kiosk so nobody has to reach
+   for browser zoom. The clamp floor is the current fixed size, so nothing gets
+   smaller than it is today. */
+:root {
+  --step-0: clamp(0.875rem, 0.80rem + 0.30vw, 1.0625rem);
+  --step-1: clamp(1rem, 0.90rem + 0.45vw, 1.25rem);
+  --step-2: clamp(1.5rem, 1.25rem + 1.0vw, 2.25rem);
+  --shell-gutter: clamp(1rem, 0.6rem + 1.4vw, 3rem);
+}
+.fluid-body  { font-size: var(--step-0); }
+.fluid-lead  { font-size: var(--step-1); }
+.fluid-title { font-size: var(--step-2); }
+
+/* ── Portrait rotate gate ──
+   Rotation cannot be forced on the web, so a full-screen overlay is the only
+   option. Gated on `pointer: coarse` as well as orientation: portrait alone
+   fires on a desktop browser in a tall narrow window, which would tell someone
+   with a mouse to rotate their laptop. */
+.rotate-gate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-gate {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 2rem;
+    text-align: center;
+    background: #FFFFFF;
+  }
+  .rotate-gate ~ .app-shell { display: none; }
+}
+
 /* ── Glass Chat Width ── */
 :root {
   --glass-chat-width: 18rem;
@@ -121,15 +693,19 @@ body {
   :root { --glass-chat-width: 100vw; }
 }
 
-/* ── Desktop Overflow Lock ── */
-@media (min-width: 1024px) {
-  html, body { height: 100dvh; overflow: hidden; }
-}
-
-/* ── Squeeze Layout (chat open → content shrinks) ── */
+/* ── Squeeze Layout (chat open → content shrinks) ──
+   DORMANT as of 2026-09-02. Nothing in the app adds `.chat-squeezed`, and
+   ControlBar (the only chat toggle) is not mounted in AppShell, so ChatPanel
+   can never open. Left in place untouched: ChatPanel is a viewport overlay,
+   not a grid participant, so it cannot disturb the shell while closed. It is
+   deferred to a later phase deliberately, not refactored under time pressure. */
 .chat-squeezed #scene-root {
   max-width: calc(100vw - var(--glass-chat-width));
-  transition: max-width 0.5s ease-out;
+  /* Chat panel overlays the avatar slot, so we no longer need to reserve
+     42vw on the right — collapse it to a small gutter so cards reclaim
+     the full available width. */
+  padding-right: 1.5rem !important;
+  transition: max-width 0.5s ease-out, padding-right 0.5s ease-out;
   overflow-x: hidden;
 }
 
@@ -138,13 +714,9 @@ body {
 .font-voice { font-family: var(--font-voice); }
 .font-data { font-family: var(--font-data); }
 
-/* Scale titles down when chat squeezes */
-.chat-squeezed #scene-root .font-hero,
-.chat-squeezed #scene-root .font-voice {
-  transform: scale(0.85);
-  transform-origin: top left;
-  transition: transform 0.5s ease-out;
-}
+/* Note: previously had transform: scale(0.85) on .font-hero / .font-voice
+   when squeezed — removed because it stacked with the width reduction
+   and made cards feel cramped. The squeeze now relies on width alone. */
 
 /* ── Chat Bubble Animations ── */
 @keyframes chat-bubble-enter {
@@ -182,35 +754,131 @@ body {
   animation: hero-pulse 2s ease-in-out infinite;
 }
 
-/* ── Button Styles ── */
+/* ══════════════════════════════════════════════════════════════
+   BUTTON SYSTEM (2026-09-03)
+   ══════════════════════════════════════════════════════════════
+   There were THREE competing implementations and they could not help looking
+   different: `.btn-action` and `.start-button` below (both unlayered, uppercase,
+   letter-spaced, different paddings and shadows) and a fully inline-styled
+   primary inside PrivacyNoticeModal with its own hover handlers.
+
+   Two roles now, and only two:
+
+     .btn-primary-red   the big red pill. Page-level primary actions and the
+                        notice's primary. Sentence case, not uppercase, because
+                        "Acknowledge and continue" in caps reads as shouting.
+     .btn-coin          a round icon button for the avatar-column strip, which
+                        the review asked to keep as "rounded coins".
+
+   `.btn-action` and `.start-button` are kept below for anything still using
+   them, but new work should use these two. They are declared here, ahead of the
+   old classes, so a element carrying both lands on the old one deliberately
+   rather than by accident. */
+.btn-primary-red {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6875rem 1.5rem;
+  border: none;
+  border-radius: 9999px;
+  background: #C91235;
+  color: #FFFFFF;
+  font-family: var(--font-voice);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(201, 18, 53, 0.22);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-primary-red:hover {
+  background: #A00E2A;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(201, 18, 53, 0.28);
+}
+.btn-primary-red:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 18, 53, 0.35);
+}
+
+/* Round icon button for the avatar strip. `--coin-size` so the same class can
+   carry the mic, the disconnect and the account initials at one size. */
+.btn-coin {
+  --coin-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* NEVER shrink. In the strip flex row the coins were being squeezed into ovals
+     when connected added an icon (owner 2026-09-18); flex:none pins them round
+     regardless of how many are shown. */
+  flex: 0 0 auto;
+  width: var(--coin-size);
+  height: var(--coin-size);
+  padding: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  color: #1A1A1A;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.btn-coin:hover { background: #F5F7FA; border-color: rgba(26, 26, 26, 0.3); }
+.btn-coin:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(201, 18, 53, 0.35); }
+.btn-coin[data-tone='danger'] { background: #C91235; border-color: #C91235; color: #FFFFFF; }
+.btn-coin[data-tone='danger']:hover { background: #A00E2A; border-color: #A00E2A; }
+.btn-coin[data-tone='muted'] { color: #C91235; }
+/* Reconnect: the red coin shown while offline. Filled red like danger so it is
+   the obvious next action, but distinct in meaning (recover, not end). Review
+   asked for the old big pill to shrink to a coin. */
+.btn-coin[data-tone='reconnect'] { background: #C91235; border-color: #C91235; color: #FFFFFF; }
+.btn-coin[data-tone='reconnect']:hover { background: #A00E2A; border-color: #A00E2A; }
+/* Connected: a quiet GREEN status coin shown while live (2026-09-18). Not a button,
+   so no hover/pointer change; it just signals the session is up. It is replaced by
+   the red reconnect coin above the moment the session drops. */
+.btn-coin[data-tone='connected'] { background: #EDFAF0; border-color: #BBE7C6; color: #16A34A; cursor: default; }
+.btn-coin[data-tone='connected']:hover { background: #EDFAF0; border-color: #BBE7C6; }
+
+/* ── Legacy button styles ── Henkel red, pill shape.
+   Superseded by .btn-primary-red above; left in place for existing callers. */
 .btn-action {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0.75rem 2rem;
-  background: var(--amber);
-  color: var(--accent-ink);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: #C91235;
+  color: #FFFFFF;
   font-family: var(--font-data);
   font-size: 0.875rem; font-weight: 700;
   letter-spacing: 0.05em; text-transform: uppercase;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
+  border: none;
+  border-radius: 9999px;
+  box-shadow: 0 6px 14px rgba(201, 18, 53, 0.18);
 }
-.btn-action:hover { transform: translateY(-1px); background: var(--accent-hover); }
+.btn-action:hover { transform: translateY(-1px); background: #A00E2A; box-shadow: 0 8px 18px rgba(201, 18, 53, 0.28); }
 
 .start-button {
-  background: var(--amber); color: var(--accent-ink);
+  background: #C91235;
+  color: #FFFFFF;
   font-family: var(--font-data);
-  font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-  padding: 0.75rem 1.5rem;
-  border: none; cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.625rem 1.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 9999px;
+  box-shadow: 0 6px 14px rgba(201, 18, 53, 0.18);
 }
-.start-button:hover { transform: translateY(-1px); background: var(--accent-hover); }
+.start-button:hover { transform: translateY(-1px); background: #A00E2A; box-shadow: 0 8px 18px rgba(201, 18, 53, 0.28); }
 
 /* ── Connecting Pulse (ripple effect while connecting) ── */
 @keyframes connecting-pulse {
-  0% { box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0.4); }
-  70% { box-shadow: 0 0 0 12px rgb(var(--accent-rgb) / 0); }
-  100% { box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0); }
+  0% { box-shadow: 0 0 0 0 rgba(4, 30, 66, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(4, 30, 66, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(4, 30, 66, 0); }
 }
 .connecting-pulse {
   animation: connecting-pulse 1.5s ease-in-out infinite;
@@ -283,9 +951,13 @@ body {
 
 /* ── Card Glass (theme-aware) ── */
 .card-glass {
-  background: var(--theme-card-bg);
+  /* 2026-09-18 (owner): white by default like every other card, and it now carries
+     `.dx-card` (added in GridView) so it toggles with the seam frost too. It used to
+     be a permanent grey `--theme-card-bg` + blur, which is why the error card looked
+     frosted-grey all the time and did not respond to the chip. No reason for it to be
+     the odd one out. */
+  background: #FFFFFF;
   border: 1px solid var(--theme-card-border);
-  backdrop-filter: blur(var(--theme-card-blur));
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
   height: 100%;
@@ -351,3 +1023,73 @@ body.tele-nav-pending .nav-skeleton-overlay {
     color-mix(in srgb, var(--theme-scene-bg) 40%, transparent) 100%
   );
 }
+
+/* ══════════════════════════════════════════════════════════════
+   AVATAR / CONTENT SEAM BLEND (2026-09-18, "frost the overlap only")
+   ══════════════════════════════════════════════════════════════
+   Corrected intent (owner): cards STAY WHITE. We do NOT tint the whole card grey
+   (that misread the error card — its natural look was the FROSTINESS at the edge,
+   not a grey fill). So a card is solid white across its body, and only its RIGHT
+   EDGE, the ~96px band where it sits over the avatar bleed, fades to transparent so
+   she shows through there; `frosted` adds a soft blur on that same reveal. The card
+   text is a child, unaffected by the parent's background, so it stays fully opaque
+   and SHARP right across the seam. The avatar's own white base is untouched.
+
+   Mechanism: the card ROOT keeps its inline `#FFFFFF`; these rules override only its
+   BACKGROUND with a left-opaque-white → right-transparent gradient (a stylesheet
+   !important beats an inline non-important value). No `--dx-card-fill` plumbing and
+   no per-inner-box edits, so the default (chopped) is pixel-identical to today.
+
+   The chip is an INTERNAL eval tool (not client-facing); once a look is chosen we
+   bake it and move the chip to the debug panel. Modes:
+     (default, no attribute) = 'chopped'  solid white card, hard seam (today)
+     'watermark'                          white card, right edge fades to reveal her
+     'frosted'                            same reveal, plus a soft blur (frosty glass)
+   Tunable: the 96px reveal width and the 6px blur. NOTE the card ROOT gradient is a
+   v1; inner boxes/rows that paint their own white in that 96px band will still cover
+   her locally until they are given the same edge treatment (queued). */
+
+body[data-avatar-blend="watermark"] .dx-card,
+body[data-avatar-blend="frosted"] .dx-card {
+  /* 2026-09-18 (owner: "all cards same width, same translucency, same back colour").
+     UNIFORM translucent white across the WHOLE card, not a right-edge gradient. Over
+     the content column's solid white base this composites back to plain white, so the
+     card still reads white everywhere EXCEPT the band where the avatar bleeds in
+     behind it (she is above the white base there), where the 0.66 wash lets her show
+     through. The SAME value on every `.dx-card`, so every card has identical colour
+     and translucency, and NOTHING resizes on toggle: this changes background only,
+     never width or padding. Text and inner boxes are opaque children, unaffected.
+     Solving the inner-box overlap (a grey pill / a button sitting over her) is the
+     NEXT step, once the surfaces are agreed. */
+  background: rgba(255, 255, 255, 0.66) !important;
+}
+
+body[data-avatar-blend="frosted"] .dx-card {
+  -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px);
+}
+
+/* Thin, subtle scrollbars inside the content column (and any scroller within it, e.g.
+   the incident detail / resolve page), so the bar stops "dissecting her arm" at the
+   seam where the column's right edge meets the avatar. */
+.app-shell > .shell-content,
+.app-shell > .shell-content * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(4, 30, 66, 0.22) transparent;
+}
+.app-shell > .shell-content::-webkit-scrollbar,
+.app-shell > .shell-content ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.app-shell > .shell-content::-webkit-scrollbar-thumb,
+.app-shell > .shell-content ::-webkit-scrollbar-thumb {
+  background: rgba(4, 30, 66, 0.20);
+  border-radius: 9999px;
+}
+.app-shell > .shell-content::-webkit-scrollbar-track,
+.app-shell > .shell-content ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Last updated: 2026-09-21 20:01 UTC+8 */

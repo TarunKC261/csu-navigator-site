@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { CalendarDays, Clock, CheckCircle2, AlertCircle, Circle } from 'lucide-react';
+import { CalendarDays, Clock, CheckCircle2, AlertCircle, Circle } from '@/lib/icons';
 
 const C = 'var(--theme-chart-line)';
 const getColor = (opacity: number) => `color-mix(in srgb, var(--theme-chart-line) ${opacity}%, transparent)`;

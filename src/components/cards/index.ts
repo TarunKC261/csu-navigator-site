@@ -1,3 +1,15 @@
+// Interactive question template
+export { QuestionCard } from './QuestionCard';
+
+// Feedback survey (rendered as a card via renderScene template "survey")
+export { SurveyCard } from './SurveyCard';
+
+// Client-side Call / new_call (rendered via renderScene template "call")
+
+// "View Calls" list (rendered via renderScene template "calls-list")
+export { CallsListCard } from './CallsListCard';
+export { LookupCard } from './LookupCard';
+
 // Core Data Cards (9)
 export { KPIStrip } from './KPIStrip';
 export { BarChart } from './BarChart';
@@ -31,6 +43,10 @@ export { RankedListCard } from './RankedListCard';
 
 // Operational (3)
 export { IncidentCard } from './IncidentCard';
+export { IncidentTable } from './IncidentTable';
+export { IncidentDraftCard } from './IncidentDraftCard';
+export { KBSuggestionCard } from './KBSuggestionCard';
+export { ResolvePage } from './ResolvePage';
 export { PipelineCard } from './PipelineCard';
 export { RiskMatrixCard } from './RiskMatrixCard';
 

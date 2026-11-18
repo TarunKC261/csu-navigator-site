@@ -13,6 +13,6 @@ export function resolveFooters(badge?: string): { left: string; right: string } 
 
   return {
     left: badge ? `${badge} · ${timestamp}` : timestamp,
-    right: 'Powered by Mobeus',
+    right: 'Powered by Unisys',
   };
 }

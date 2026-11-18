@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Send, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Send, Sparkles } from '@/lib/icons';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { assets } from '@/assets';
 import { ToolCallIndicator } from './ToolCallIndicator';
@@ -16,7 +16,6 @@ export function ChatPanel() {
   const sendTextMessage = useVoiceSessionStore((s) => s.sendTextMessage);
   const currentAgentName = useVoiceSessionStore((s) => s.currentAgentName);
   const avatarThumbnailUrl = useVoiceSessionStore((s) => s.avatarThumbnailUrl);
-  const avatarAssets = useVoiceSessionStore((s) => s.avatarAssets);
 
   const [textInput, setTextInput] = useState('');
   const [isSleeping, setIsSleeping] = useState(false);
@@ -34,7 +33,8 @@ export function ChatPanel() {
   }, [transcripts, toolActivity]);
 
   // Sleep mode: dim after mouse idle
-  const armSleepTimer = useCallback(() => {
+  const resetSleep = useCallback(() => {
+    setIsSleeping(false);
     if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
     sleepTimerRef.current = setTimeout(() => {
       if (document.activeElement !== inputRef.current) {
@@ -43,18 +43,11 @@ export function ChatPanel() {
     }, SLEEP_TIMEOUT);
   }, []);
 
-  const resetSleep = useCallback(() => {
-    setIsSleeping(false);
-    armSleepTimer();
-  }, [armSleepTimer]);
-
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel || !isChatPanelOpen) return;
 
-    // The panel always opens awake: cleanup below resets the sleep state on
-    // close, so the effect body only needs to arm the idle timer.
-    armSleepTimer();
+    resetSleep();
     panel.addEventListener('mousemove', resetSleep);
     panel.addEventListener('mousedown', resetSleep);
 
@@ -62,9 +55,8 @@ export function ChatPanel() {
       panel.removeEventListener('mousemove', resetSleep);
       panel.removeEventListener('mousedown', resetSleep);
       if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
-      setIsSleeping(false);
     };
-  }, [isChatPanelOpen, armSleepTimer, resetSleep]);
+  }, [isChatPanelOpen, resetSleep]);
 
   useEffect(() => {
     if (isSleeping) {
@@ -84,36 +76,50 @@ export function ChatPanel() {
     await sendTextMessage(message);
   };
 
-  // Merge transcripts + tool activity, sorted chronologically
-  const allEntries = [...transcripts, ...(showToolCalls ? toolActivity : [])];
-  allEntries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-  const visibleTranscripts = allEntries.filter((t) => {
-    if (t.participant === 'tool') return true; // already filtered above via showToolCalls
-    return t.isFinal || t.isAgent;
-  });
+  // Merge transcripts + tool activity, sorted chronologically. Memoized:
+  // this used to rebuild + re-sort the full list on EVERY render — including
+  // each interim STT fragment, which fires many times per spoken sentence and
+  // re-renders the panel (sleep-mode state, input keystrokes, etc.) anyway.
+  const visibleTranscripts = useMemo(() => {
+    const allEntries = [...transcripts, ...(showToolCalls ? toolActivity : [])];
+    allEntries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    return allEntries.filter((t) => {
+      if (t.participant === 'tool') return true; // already filtered above via showToolCalls
+      return t.isFinal || t.isAgent;
+    });
+  }, [transcripts, toolActivity, showToolCalls]);
 
   return (
     <div
       ref={panelRef}
-      className={`fixed telelabor-panel top-0 h-dvh z-50 flex flex-col
+      className={`fixed telelabor-panel z-40 flex flex-col
         border-l-0
         transition-[right,opacity] duration-500 ease-out
         max-xl:left-0 max-xl:right-0 max-xl:w-full
       `}
       style={{
+        top: 'var(--app-chrome-h)',
+        height: 'calc(100dvh - var(--app-chrome-h) - var(--app-footer-h))',
         width: 'var(--glass-chat-width)',
         maxWidth: '100vw',
         right: isChatPanelOpen ? '0' : 'calc(-1 * var(--glass-chat-width))',
         opacity: isChatPanelOpen ? 1 : 0,
         pointerEvents: isChatPanelOpen ? 'auto' : 'none',
+        // 2026-09-19 (owner): the chat toggle is hidden in this build, but the closed
+        // panel was still catching a hover in the right-edge corner and showing the
+        // Smart Mode tooltip. `visibility: hidden` when closed removes it from hit
+        // testing entirely (off-screen + pointer-events:none was not enough), so nothing
+        // in the hidden chat is reachable. It flips back to visible on open.
+        visibility: isChatPanelOpen ? 'visible' : 'hidden',
       }}
     >
-      {/* Chat messages area */}
-      <div className="chat-messages-container flex-1 px-4 pt-20 pb-4 flex flex-col gap-3">
+      {/* Chat messages area — transcripts pinned to top so they don't
+          obscure the avatar's face when only a few lines are present. */}
+      <div className="chat-messages-container flex-1 px-4 pt-6 pb-4 flex flex-col gap-3 justify-start">
         {transcripts.length === 0 && isConnected && (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-start justify-end">
             <p
-              className="text-sm font-voice"
+              className="text-sm font-voice text-right"
               style={{ color: 'var(--theme-chat-placeholder)' }}
             >
               Conversation will appear here...
@@ -157,9 +163,10 @@ export function ChatPanel() {
               {t.participant === 'agent' && (
                 <div className="chat-avatar w-7 h-7 rounded-full overflow-hidden shrink-0 mt-1">
                   <img
-                    src={avatarAssets?.profileUrl || avatarThumbnailUrl || assets.avatarProfile}
+                    src={avatarThumbnailUrl || assets.avatarProfile}
                     alt={currentAgentName || 'Agent'}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: 'center 15%' }}
                   />
                 </div>
               )}

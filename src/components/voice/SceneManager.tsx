@@ -25,9 +25,6 @@ export function SceneManager() {
   const navigateSceneBack = useVoiceSessionStore((s) => s.navigateSceneBack);
   const sceneHistory = useVoiceSessionStore((s) => s.sceneHistory);
   const tellAgent = useVoiceSessionStore((s) => s.tellAgent);
-  const avatarVideoTrack = useVoiceSessionStore((s) => s.avatarVideoTrack);
-  const avatarEnabled = useVoiceSessionStore((s) => s.avatarEnabled);
-  const avatarVisible = useVoiceSessionStore((s) => s.avatarVisible);
   const skeletonLayout = useVoiceSessionStore((s) => s.skeletonLayout);
 
   const handleAction = useCallback(
@@ -52,35 +49,42 @@ export function SceneManager() {
   if (!sceneActive && !currentScene) return null;
   if (!currentScene && !skeletonLayout) return null;
 
-  const hasHistory = sceneHistory.length > 1;
+  const hasHistory = sceneHistory.length > 0;
 
   return (
-    <div id="scene-root" className="relative flex flex-col w-full h-full min-h-0 text-white">
-      {/* Avatar background layer */}
-      {avatarEnabled && avatarVisible && avatarVideoTrack && (
-        <div className="absolute inset-0 z-0 opacity-30">
-          <video
-            ref={(el) => {
-              if (el && avatarVideoTrack) {
-                avatarVideoTrack.attach(el);
-              }
-            }}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 scene-gradient-overlay" />
-        </div>
-      )}
-
+    // 2026-09-02: every layout style below was deleted, and this is the fix for
+    // the content-under-avatar bleed rather than a tidy-up.
+    //
+    //   paddingRight: 'min(42vw, 640px)'  a HARDCODED copy of --avatar-w that
+    //     never picked up the `min(50vw, 980px)` step globals.css applies above
+    //     1025px. Above that width the avatar took up to 980px while content
+    //     stepped aside for 640px, so up to 340px of content painted underneath
+    //     it. Adjusting browser zoom only appeared to fix it by moving the
+    //     viewport to where the two expressions coincide.
+    //   maxWidth / isIncidentList        multi-incident lists opted OUT of the
+    //     reservation entirely and rendered full-width UNDER the avatar. With
+    //     the old desktop overflow lock there was no page scroll either, so the
+    //     overflow was simply clipped.
+    //   paddingTop / paddingBottom       chrome clearance by calc(). The header,
+    //     banner and footer are grid rows now, so this cell already starts and
+    //     ends exactly where they do.
+    //   id="scene-root"                  moved to the shell's content cell. Both
+    //     elements carried it, so the document had duplicate IDs.
+    //
+    // The cell scrolls (`.shell-content { overflow-y: auto }`), so a long list
+    // scrolls instead of being cut off, at any zoom.
+    <div
+      className="relative flex flex-col w-full h-full min-h-0"
+      style={{ color: '#041E42' }}
+    >
       {/* Header — badge + optional back button */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-3 shrink-0">
+      <header className="scene-pad-x relative z-10 flex items-center justify-between py-3 shrink-0">
         <div className="flex items-center gap-3">
           {hasHistory && (
             <button
               onClick={navigateSceneBack}
-              className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-sm transition-colors"
+              style={{ color: 'rgba(4, 30, 66, 0.6)' }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -100,7 +104,18 @@ export function SceneManager() {
           )}
         </div>
         {currentScene?.badge && (
-          <span className="text-xs font-medium text-white/50 tracking-wider uppercase font-data">
+          // chk2: the badge ("CREATE FAILED", "TRY THIS FIRST", ...) sat hard
+          // against the content-column right edge, right on top of the avatar
+          // shoulder that bleeds --avatar-bleed-left px into Col1. Pulling it
+          // left by that same bleed (plus a hair) clears her shoulder AND any
+          // list scrollbar, so it reads as page text, not text stuck to her.
+          <span
+            className="text-xs font-medium tracking-wider uppercase font-data"
+            style={{
+              color: 'rgba(4, 30, 66, 0.5)',
+              marginRight: 'calc(var(--avatar-bleed-left, 96px) + 0.25rem)',
+            }}
+          >
             {currentScene.badge}
           </span>
         )}
@@ -108,22 +123,26 @@ export function SceneManager() {
 
       {/* Title area */}
       {(currentScene?.title || currentScene?.subtitle) && (
-        <div className="relative z-10 px-6 pb-4 shrink-0">
+        <div className="scene-pad-x relative z-10 pb-4 shrink-0">
           {currentScene?.title && (
-            <h1 className="text-2xl font-bold tracking-tight font-hero">
+            <h1 className="text-2xl font-bold tracking-tight font-hero" style={{ color: '#041E42' }}>
               {currentScene.title}
             </h1>
           )}
           {currentScene?.subtitle && (
-            <p className="text-sm text-white/60 mt-1 font-voice">
+            <p className="text-sm mt-1 font-voice" style={{ color: 'rgba(4, 30, 66, 0.6)' }}>
               {currentScene.subtitle}
             </p>
           )}
         </div>
       )}
 
-      {/* Main content — Custom Layout, GridView, or Skeleton */}
-      <main className="relative z-10 flex-1 px-6 pb-4 overflow-auto min-h-0">
+      {/* Main content — Custom Layout, GridView, or Skeleton.
+          chk2: pb-4 -> pb-0. The error card, the incident list and the KB list
+          stopped ~16px short of the bottom while the avatar runs edge to edge,
+          so the bottom of Col1 read as a gap instead of blending into her. With
+          no bottom pad the card/list is flush with the viewport bottom. */}
+      <main className="scene-pad-x relative z-10 flex-1 pb-0 overflow-auto min-h-0">
         {skeletonLayout ? (
           <SceneSkeleton layout={skeletonLayout} />
         ) : customLayout && currentScene ? (
@@ -160,7 +179,7 @@ export function SceneManager() {
             />
           </Suspense>
         ) : (
-          <div className="flex items-center justify-center h-full text-white/40 font-data">
+          <div className="flex items-center justify-center h-full font-data" style={{ color: 'rgba(4, 30, 66, 0.4)' }}>
             Awaiting data...
           </div>
         )}
@@ -168,7 +187,7 @@ export function SceneManager() {
 
       {/* Footer */}
       {(currentScene?.footerLeft || currentScene?.footerRight) && (
-        <footer className="relative z-10 flex items-center justify-between px-6 py-3 text-xs text-white/40 shrink-0 font-data">
+        <footer className="scene-pad-x relative z-10 flex items-center justify-between py-3 text-xs shrink-0 font-data" style={{ color: 'rgba(4, 30, 66, 0.4)' }}>
           <span>{currentScene.footerLeft || ''}</span>
           <span>{currentScene.footerRight || ''}</span>
         </footer>
@@ -177,58 +196,14 @@ export function SceneManager() {
   );
 }
 
-const DEFAULT_SKELETON_ROWS = [1, 2];
-const MAX_SKELETON_ROWS = 3;
-const MAX_SKELETON_COLUMNS = 3;
-
-function clampSkeletonCount(value: number) {
-  return Math.min(Math.max(value, 1), MAX_SKELETON_COLUMNS);
-}
-
-/**
- * Resolve a skeleton layout string into a validated list of per-row column
- * counts. The `layout` originates from the LLM-generated scene DSL, so it can
- * be ANY string ("2x3", "1-2-3", "v:2-1", "grid", "", undefined-ish). Every
- * branch validates and clamps before producing a count — an unvalidated value
- * reaching `Array(n)` below throws `RangeError: Invalid array length` when n is
- * NaN, negative, fractional, or huge, which crashes the whole scene render.
- */
-function parseSkeletonRows(layout: string) {
-  const normalized = (layout ?? '').trim().toLowerCase();
-
-  // "CxR" grid — e.g. "2x3"
-  const gridMatch = normalized.match(/^(\d+)x(\d+)$/);
-  if (gridMatch) {
-    const colCount = Number.parseInt(gridMatch[1], 10);
-    const rowCount = Number.parseInt(gridMatch[2], 10);
-    if (Number.isInteger(colCount) && Number.isInteger(rowCount) && rowCount > 0) {
-      return Array.from({ length: Math.min(rowCount, MAX_SKELETON_ROWS) }, () =>
-        clampSkeletonCount(colCount),
-      );
-    }
-  }
-
-  // Hybrid rows — e.g. "1-2-3"
-  if (/^\d+(?:-\d+)*$/.test(normalized)) {
-    return normalized
-      .split('-')
-      .slice(0, MAX_SKELETON_ROWS)
-      .map((count) => clampSkeletonCount(Number.parseInt(count, 10)));
-  }
-
-  // Vertical columns — e.g. "v:2-1"
-  if (/^v:\d+(?:-\d+)*$/.test(normalized)) {
-    const colCount = normalized.slice(2).split('-').length;
-    return [clampSkeletonCount(colCount)];
-  }
-
-  // Anything else (mosaic names, "layout:x", free text, empty) → safe default
-  return DEFAULT_SKELETON_ROWS;
-}
-
 /** Skeleton loading grid — shows shimmer cards matching the layout */
 function SceneSkeleton({ layout }: { layout: string }) {
-  const rows = parseSkeletonRows(layout);
+  const rows = layout.includes('x')
+    ? (() => {
+        const [cols, rowCount] = layout.split('x').map(Number);
+        return Array(rowCount).fill(cols);
+      })()
+    : layout.split('-').map(Number);
 
   return (
     <div className="h-full flex flex-col gap-3">
@@ -281,3 +256,5 @@ function SceneSkeleton({ layout }: { layout: string }) {
     </div>
   );
 }
+
+/* Last updated: 2026-09-17 16:23 UTC+8 */

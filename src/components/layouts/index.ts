@@ -16,7 +16,7 @@
 import type { LayoutProps } from './types';
 import { HeroLayout } from './HeroLayout';
 
-// ── Layout Map ──────────────────────────────────────────────────────────────
+// ── Layout Map ─────────────────────────────────────────────
 // Maps layout name → React component. Add new layouts here.
 // Names are kebab-case, matched case-insensitively.
 
