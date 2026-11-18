@@ -5,11 +5,12 @@ import { BookOpen, ExternalLink, CheckCircle2, Sparkles, FileText } from '@/lib/
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // Fixed UI chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 // Article titles/summaries/steps are agent content (already localized); the
 // tellAgent command phrases stay ENGLISH (the agent parses them). Only captions
 // and button labels are localized here.
-const STRINGS = {
+const STRINGS = dict({
   en: {
     suggested: 'Self-service · Suggested fix',
     fallbackTitle: 'Self-service article',
@@ -42,7 +43,7 @@ const STRINGS = {
     reconnectingTip: 'Verbindung zum Assistenten wird wiederhergestellt…',
     working: 'Einen Moment, ich hole das für Sie.',
   },
-} as const;
+});
 
 /**
  * KBSuggestionCard — silent KB self-service gate before `create_incident`.

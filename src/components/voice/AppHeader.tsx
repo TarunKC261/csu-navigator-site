@@ -8,14 +8,19 @@ import { APP_VERSION, VERSION_LABEL } from '@/lib/version';
 import { logEvent } from '@/lib/sessionLog';
 
 // Header chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const HEADER_STRINGS = {
+const HEADER_STRINGS = dict({
   en: { goHome: 'Go to home page', title: 'CSU Student Engagement Platform', bannerLead: 'Demo.', bannerTail: 'All student data is sample data.', bannerShort: 'Sample data only.', privacyFull: 'Data Privacy Notice', privacyShort: 'Privacy' },
   de: { goHome: 'Zur Startseite', title: 'CSU Student Engagement Platform', bannerLead: 'Proof of Concept.', bannerTail: 'Nur Test- oder anonymisierte Daten verwenden.', bannerShort: 'Nur Testdaten verwenden.', privacyFull: 'Datenschutzhinweis', privacyShort: 'Datenschutz' },
-} as const;
+  es: { goHome: 'Ir a la página de inicio', bannerLead: 'Demostración.', bannerTail: 'Todos los datos de estudiantes son de ejemplo.', bannerShort: 'Solo datos de ejemplo.', privacyFull: 'Aviso de privacidad de datos', privacyShort: 'Privacidad' },
+  zh: { goHome: '返回首页', bannerLead: '演示。', bannerTail: '所有学生数据均为示例数据。', bannerShort: '仅为示例数据。', privacyFull: '数据隐私声明', privacyShort: '隐私' },
+  tl: { goHome: 'Pumunta sa home page', bannerLead: 'Demo.', bannerTail: 'Halimbawang datos lang ang lahat ng datos ng estudyante.', bannerShort: 'Halimbawang datos lang.', privacyFull: 'Abiso sa Privacy ng Datos', privacyShort: 'Privacy' },
+  vi: { goHome: 'Về trang chủ', bannerLead: 'Bản demo.', bannerTail: 'Mọi dữ liệu sinh viên đều là dữ liệu mẫu.', bannerShort: 'Chỉ dữ liệu mẫu.', privacyFull: 'Thông báo quyền riêng tư dữ liệu', privacyShort: 'Quyền riêng tư' },
+});
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { AccountMenu } from '@/components/voice/AccountMenu';
 import { BrandMark } from '@/components/brand/BrandMark';
 
+import { dict } from '@/lib/i18n/dict';
 /**
  * AppHeader, the single chrome row.
  *

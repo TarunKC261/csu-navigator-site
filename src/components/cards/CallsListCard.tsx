@@ -10,13 +10,14 @@ import renderScene from '@/site-functions/renderScene';
 import { fetchBackendCalls } from '@/lib/callsBackend';
 import { logEvent } from '@/lib/sessionLog';
 
+import { dict } from '@/lib/i18n/dict';
 /** A displayed row: a client-cache call ('local', carries a conversation log) or a
  *  call read back from ServiceNow ('backend', no transcript). Owner 2026-11-11 (#2):
  *  the two are shown MERGED, a backend twin clubbed directly under its local match. */
 type Row = DxCall & { _src: 'local' | 'backend' };
 
 // Fixed chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const CALLS_STRINGS = {
+const CALLS_STRINGS = dict({
   en: {
     yourCalls: 'Your calls', call: 'call', calls: 'calls', close: 'Close',
     noCalls: 'No calls yet this session. A call is logged when you ask about an issue.',
@@ -47,7 +48,7 @@ const CALLS_STRINGS = {
     showDetails: 'Details anzeigen', hideDetails: 'Details ausblenden',
     fromServiceNow: 'ServiceNow', storedNoTranscript: 'In ServiceNow gespeichert — kein Gesprächsprotokoll auf diesem Datensatz.',
   },
-} as const;
+});
 
 /**
  * CallsListCard — "View Calls": the signed-in user's Calls (ServiceNow new_call

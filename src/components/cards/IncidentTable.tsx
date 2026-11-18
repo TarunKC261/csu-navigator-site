@@ -4,14 +4,15 @@ import React, { useMemo, useState } from 'react';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // Fixed UI chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 // Row values (number, state, priority labels) are ServiceNow data, left as-is;
 // only the table's own structural labels are localized. The tellAgent phrases
 // ("show INC…", "I want to create a new incident") stay English.
-const STRINGS = {
+const STRINGS = dict({
   en: { myTickets: 'My incidents', newIncident: 'New incident', searchPlaceholder: 'Search by number, keyword or description…', state: 'State', priority: 'Priority', number: 'Number', shortDescription: 'Short description', created: 'Created', updated: 'Updated', noMatch: 'No incidents match those filters.' },
   de: { myTickets: 'Meine Vorfälle', newIncident: 'Neuer Vorfall', searchPlaceholder: 'Nach Nummer, Stichwort oder Beschreibung suchen…', state: 'Status', priority: 'Priorität', number: 'Nummer', shortDescription: 'Kurzbeschreibung', created: 'Erstellt', updated: 'Aktualisiert', noMatch: 'Keine Vorfälle entsprechen diesen Filtern.' },
-} as const;
+});
 
 /**
  * IncidentTable — Henkel "My tickets" table view.

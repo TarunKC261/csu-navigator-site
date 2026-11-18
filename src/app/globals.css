@@ -105,6 +105,22 @@
   --henkel-border: #E5E7EB;
   --henkel-success: #16A34A;
   --henkel-elevation: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* --csu-* aliases for the cards and verify door merged from Venkat's build
+     (JourneyCard, AidCard, FormCard, VerifyGate). They point at the same tokens
+     as the rest of the page. "gold" is mapped to CSU secondary navy, because
+     gold is not in the CSU system palette. */
+  --csu-accent: var(--henkel-red);
+  --csu-accent-hover: var(--henkel-red-hover);
+  --csu-ink: var(--henkel-ink);
+  --csu-ink-muted: var(--henkel-ink-muted);
+  --csu-surface: var(--henkel-surface);
+  --csu-surface-alt: var(--henkel-surface-alt);
+  --csu-border: var(--henkel-border);
+  --csu-success: var(--henkel-success);
+  --csu-danger: #8E0D25;
+  --csu-gold: #003D78;
+  --csu-gold-soft: rgba(0, 61, 120, 0.08);
+  --csu-elevation: var(--henkel-elevation);
 }
 
 /* ── Body background ── enterprise neutral */

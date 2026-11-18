@@ -5,6 +5,7 @@ import { useIdentity } from '@/lib/identity/useIdentity';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { logEvent } from '@/lib/sessionLog';
 import { config } from '@/lib/runtime-config';
+import { useGateStore } from '@/lib/stores/gate-store';
 
 /**
  * GreetOnReady, the trigger for the greeting.
@@ -41,6 +42,15 @@ export function GreetOnReady() {
     const resumeAudioPlayback = useVoiceSessionStore((s) => s.resumeAudioPlayback);
     const avatarAudioTrack = useVoiceSessionStore((s) => s.avatarAudioTrack);
     const agentSay = useVoiceSessionStore((s) => s.agentSay);
+    const greetAfterVerification = useVoiceSessionStore((s) => s.greetAfterVerification);
+    const gateStatus = useGateStore((s) => s.status);
+
+    // CSU student door: the moment the code is accepted (typed or read out),
+    // speak the warm welcome and tell Val the record is open. Runs once.
+    useEffect(() => {
+        if (gateStatus !== 'verified') return;
+        void greetAfterVerification();
+    }, [gateStatus, greetAfterVerification]);
 
     // First name only. Greeting a raw email local-part in full (e.g.
     // "Good morning, firstname.lastname") is worse than no name, so the

@@ -6,8 +6,9 @@ import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 import { logEvent } from '@/lib/sessionLog';
 
+import { dict } from '@/lib/i18n/dict';
 // Fixed UI chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const STRINGS = {
+const STRINGS = dict({
   en: {
     badge: 'Look up an incident',
     title: 'Which incident?',
@@ -26,7 +27,7 @@ const STRINGS = {
     workingPrefix: 'Ich suche',
     heardPrefix: 'Gehört',
   },
-} as const;
+});
 
 const NAVY = '4, 30, 66';
 const navy = (a: number) => `rgba(${NAVY}, ${a})`;

@@ -14,6 +14,7 @@ import { useCallsStore, callUserKey } from '@/lib/stores/calls-store';
 import { useAuthModeStore } from '@/lib/stores/auth-mode-store';
 import { HENKEL_CATEGORIES, CATEGORY_NAMES, canonicalCategory, canonicalSubcategory } from '@/data/henkelCategories';
 
+import { dict } from '@/lib/i18n/dict';
 /**
  * IncidentForm — ONE card for the whole incident CRUD. There is ONE field grid.
  * The mode only changes whether the fields are editable and which actions show;
@@ -78,7 +79,7 @@ function matchSubcategory(category: string, raw?: string): string {
  * GERMAN STRINGS ARE A FIRST DRAFT — flagged for native review (AT / German team).
  * Correct any wording here; the keys and wiring stay the same.
  */
-const STRINGS = {
+const STRINGS = dict({
   en: {
     draftReview: 'Draft · review before creating',
     indicatesRequired: 'Indicates required',
@@ -151,7 +152,7 @@ const STRINGS = {
     fillRequired: 'Bitte füllen Sie die mit * markierten Pflichtfelder aus.',
     working: 'Einen Moment, ich hole das für Sie.',
   },
-} as const;
+});
 
 const SERVICENOW_INSTANCE = config.servicenowInstance();
 function buildServiceNowUrl(incidentNumber?: string): string {

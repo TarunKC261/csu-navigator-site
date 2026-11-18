@@ -8,11 +8,16 @@ import { useLocale } from '@/lib/i18n/useLocale';
 import { logEvent } from '@/lib/sessionLog';
 
 // Countdown chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const LIFECYCLE_STRINGS = {
+const LIFECYCLE_STRINGS = dict({
     en: { pausingIn: (s: number) => `Session pausing in ${s}s`, pausingSoon: 'Session pausing soon', sayOrExtend: 'Say something, or extend', extend: 'Extend session' },
     de: { pausingIn: (s: number) => `Sitzung pausiert in ${s}s`, pausingSoon: 'Sitzung pausiert gleich', sayOrExtend: 'Sagen Sie etwas oder verlängern Sie', extend: 'Sitzung verlängern' },
-} as const;
+  es: { pausingIn: (s: number) => `La sesión se pausará en ${s} s`, pausingSoon: 'La sesión se pausará pronto', sayOrExtend: 'Di algo o amplía la sesión', extend: 'Ampliar sesión' },
+  zh: { pausingIn: (s: number) => `会话将在 ${s} 秒后暂停`, pausingSoon: '会话即将暂停', sayOrExtend: '说点什么，或延长会话', extend: '延长会话' },
+  tl: { pausingIn: (s: number) => `Hihinto ang session sa loob ng ${s}s`, pausingSoon: 'Malapit nang huminto ang session', sayOrExtend: 'Magsalita, o pahabain ito', extend: 'Pahabain ang session' },
+  vi: { pausingIn: (s: number) => `Phiên sẽ tạm dừng sau ${s} giây`, pausingSoon: 'Phiên sắp tạm dừng', sayOrExtend: 'Hãy nói gì đó, hoặc gia hạn', extend: 'Gia hạn phiên' },
+});
 import { playUISound, playGlassSound } from '@/utils/soundGenerator';
+import { dict } from '@/lib/i18n/dict';
 import {
     BEEPS_ENABLED,
     BEEP_VOLUME,

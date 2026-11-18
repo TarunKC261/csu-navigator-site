@@ -5,8 +5,9 @@ import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 import { logEvent } from '@/lib/sessionLog';
 
+import { dict } from '@/lib/i18n/dict';
 // Survey chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const SURVEY_STRINGS = {
+const SURVEY_STRINGS = dict({
   en: {
     thanks: 'Thanks for your feedback', share: 'Share your feedback',
     subtitle: 'A few quick questions. Nothing is mandatory.',
@@ -25,7 +26,7 @@ const SURVEY_STRINGS = {
     questions: ['Wurde Ihr Anliegen bearbeitet oder Ihr Problem gelöst?', 'War es schneller als der übliche Weg?', 'Würden Sie dies anderen empfehlen?'],
     choices: ['Ja', 'Teilweise', 'Nein'],
   },
-} as const;
+});
 
 /**
  * SurveyCard — the feedback form, rendered as a scene card (owner 2026-10-06).
