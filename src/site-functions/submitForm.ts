@@ -7,8 +7,8 @@
  *
  * This build is a static site with no backend, and the CSU demo rule is that
  * nothing is really submitted, booked or sent. So the record is kept in this
- * browser tab (sessionStorage) under a reference like `CSUF-DEMO-4K7Q2M`, and
- * the result says `deliveredToCampus: false`. The card shows "Saved (demo)".
+ * browser tab (sessionStorage) under a reference like `CSUF-4K7Q2M`, and
+ * the result says `deliveredToCampus: false`. The card shows "Saved".
  */
 import { logEvent } from '@/lib/sessionLog';
 
@@ -40,7 +40,7 @@ function reference(): string {
     bytes.forEach((b) => {
         out += ALPHABET[b % ALPHABET.length];
     });
-    return `CSUF-DEMO-${out}`;
+    return `CSUF-${out}`;
 }
 
 export default async function submitForm(args: SubmitFormArgs): Promise<SubmitFormResult> {

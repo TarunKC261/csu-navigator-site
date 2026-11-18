@@ -395,6 +395,9 @@ function partOfDay(): string {
  * (400/422, e.g. a stricter manifest schema), retry once WITHOUT the manifest,
  * so the worst case is "Val has no student tools", never "Val does not connect".
  */
+/** CSU: send button taps on LiveKit's chat input so they interrupt Val like speech (see tellAgent). */
+const TAPS_INTERRUPT = true;
+
 async function postWithManifest(
   url: string,
   credentials: RequestCredentials,
@@ -1612,8 +1615,28 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
         ],
       }));
 
-      // Send RPC to agent and return parsed response
       logTellAgent(trimmed);
+
+      // CSU (2026-11-18): a tap must interrupt Val the way speaking does.
+      // The agent's `tellAgent` RPC only appends a user turn and calls
+      // generate_reply, which QUEUES behind whatever she is saying, so a button
+      // tapped mid-sentence waited for her to finish. LiveKit's own chat input
+      // (`lk.chat`, the path the chat panel already uses) runs the agent
+      // session's default text handler: interrupt() first, then reply to the
+      // text, exactly like a user starting to talk. So taps go that way now.
+      // If sending on lk.chat fails, fall back to the old RPC (never lose a tap).
+      if (TAPS_INTERRUPT) {
+        try {
+          await room.localParticipant.sendText(trimmed, { topic: 'lk.chat' });
+          logEvent('rpc', `tellAgent via lk.chat (interrupts like speech): "${trimmed.slice(0, 60)}"`);
+          logTellAgentResponse(trimmed, { success: true });
+          return { success: true };
+        } catch (err) {
+          logEvent('error', 'tellAgent: lk.chat send failed, falling back to the tellAgent RPC', String(err));
+        }
+      }
+
+      // Send RPC to agent and return parsed response
       const response = await room.localParticipant.performRpc({
         destinationIdentity: agentParticipant.identity,
         method: 'tellAgent',
