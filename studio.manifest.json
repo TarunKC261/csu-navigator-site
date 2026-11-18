@@ -1,0 +1,122 @@
+{
+  "template": "starter",
+  "version": 1,
+  "groups": [
+    {
+      "id": "look",
+      "label": "Look"
+    },
+    {
+      "id": "welcome",
+      "label": "Welcome"
+    }
+  ],
+  "fields": [
+    {
+      "path": "theme.accent",
+      "group": "look",
+      "label": "Accent colour",
+      "kind": "color",
+      "default": "#00E5FF",
+      "help": "Buttons and the highlighted word of the welcome title."
+    },
+    {
+      "path": "theme.background",
+      "group": "look",
+      "label": "Background colour",
+      "kind": "color",
+      "default": "#0A0E14",
+      "help": "Behind the picture and around the panels."
+    },
+    {
+      "path": "theme.font",
+      "group": "look",
+      "label": "Typeface",
+      "kind": "select",
+      "default": "outfit",
+      "options": [
+        {
+          "value": "outfit",
+          "label": "Outfit with Instrument Sans"
+        },
+        {
+          "value": "manrope",
+          "label": "Manrope"
+        },
+        {
+          "value": "inter",
+          "label": "Inter"
+        },
+        {
+          "value": "dm-sans",
+          "label": "DM Sans"
+        },
+        {
+          "value": "space-grotesk",
+          "label": "Space Grotesk"
+        },
+        {
+          "value": "poppins",
+          "label": "Poppins"
+        },
+        {
+          "value": "lora",
+          "label": "Lora (serif)"
+        },
+        {
+          "value": "playfair",
+          "label": "Playfair Display (serif)"
+        }
+      ]
+    },
+    {
+      "path": "brand.logo",
+      "group": "look",
+      "label": "Logo",
+      "kind": "image",
+      "help": "Web address of a logo (SVG or PNG with a transparent background), shown before the tele's name at the top left."
+    },
+    {
+      "path": "welcome.badge",
+      "group": "welcome",
+      "label": "Badge",
+      "kind": "text",
+      "max": 40,
+      "default": "{tele} · AI powered",
+      "help": "{tele} is replaced with the tele's name."
+    },
+    {
+      "path": "welcome.title",
+      "group": "welcome",
+      "label": "Headline",
+      "kind": "text",
+      "max": 40,
+      "default": "Your AI"
+    },
+    {
+      "path": "welcome.highlight",
+      "group": "welcome",
+      "label": "Highlighted words",
+      "kind": "text",
+      "max": 30,
+      "default": "Assistant",
+      "help": "Shown after the headline, in the accent colour."
+    },
+    {
+      "path": "welcome.subtitle",
+      "group": "welcome",
+      "label": "Subtitle",
+      "kind": "text",
+      "max": 120,
+      "default": "Always available · Instant answers · Personalized help"
+    },
+    {
+      "path": "welcome.button",
+      "group": "welcome",
+      "label": "Start button",
+      "kind": "text",
+      "max": 30,
+      "default": "Start conversation"
+    }
+  ]
+}

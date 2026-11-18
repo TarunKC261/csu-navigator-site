@@ -1,0 +1,241 @@
+# platform.yaml — Mobeus Voice AI Configuration
+# This file controls your site's voice agent settings.
+# Changes pushed to your repo will auto-apply to your dashboard.
+# See public/platform-options.yaml for all valid provider/model values.
+#
+# All fields are optional. Only include what you want to configure.
+# Fields not present here will keep their dashboard values.
+#
+# Docs: https://docs.mobeus.ai/tele-yaml
+
+version: 1.1
+
+# ─── Site Settings ──────────────────────────────────────
+site:
+  # name: "My Business"      # Display name shown in dashboard
+  # active: true              # Whether the website is active
+  # greeting: "Welcome!"      # Greeting shown in the widget
+
+# ─── Widget Appearance ──────────────────────────────────
+widget:
+  position: bottom-right      # bottom-right | bottom-left | top-right | top-left
+  primaryColor: "#000000"     # Hex color for widget accent
+
+# ─── Voice Session Defaults ────────────────────────────
+defaults:
+  avatarEnabled: false
+  avatarVisible: true
+  micMuted: false
+  volumeMuted: false
+
+# ─── Agent / Voice Configuration ────────────────────────
+# These settings control the voice agent assigned to this website.
+agent:
+  # greeting: "Hi there!"     # What the agent says first
+
+  llm:
+    provider: openai           # See platform-options.yaml for all providers
+    model: gpt-4o              # See platform-options.yaml for all models
+    temperature: 0.7           # 0.0 (deterministic) to 2.0 (creative)
+
+  voice:
+    provider: elevenlabs       # elevenlabs | cartesia | openai | google
+    # voiceId: ""              # Provider-specific voice ID
+    # voiceName: ""            # Human-readable voice name
+    # model: ""                # TTS model (e.g. eleven_flash_v2_5)
+    # style: ""                # google only: how every line is delivered, e.g. "warm and calm"
+
+  stt:
+    provider: deepgram         # deepgram | openai | assemblyai
+    language: en               # Language code (e.g. en, es, fr)
+
+  behavior:
+    allowInterruptions: true
+    interruptionThreshold: 0.5 # 0.0 to 1.0 — raise for noisy environments
+    minInterruptionWords: 0    # 0 to 10 — ignore sounds shorter than N words
+    endpointingDelay: 0.5      # 0.0 to 3.0 seconds of silence = "user is done"
+    # turnDetection: semantic  # semantic (default) waits for the end of a thought; vad = silence only
+    # maxEndpointingDelay: 2.5 # 0.5 to 5.0 — longest wait when the user sounds unfinished
+
+  avatar:
+    enabled: false
+    # provider: liveavatar
+    # avatarId: ""
+
+  # ── TTS Pronunciation Overrides ─────────────────────
+  # Regex patterns applied to the LLM's text before TTS speaks it. Use to
+  # expand acronyms, fix unusual pronunciations, or read symbols aloud.
+  # Must be nested under `agent:` — placing it at the top level is silently
+  # dropped (the schema attaches it per-agent).
+  # ttsReplacements:
+  #   - pattern: "API"
+  #     replacement: "ay pee eye"
+  #   - pattern: "WSJ"
+  #     replacement: "Wall Street Journal"
+  #     label: "expand acronym"
+
+# ─── Scene / UI Engine ─────────────────────────────────
+sceneGeneration:
+  brainMode: ONE_BRAIN         # ONE_BRAIN | TWO_BRAIN
+  uiEngine:
+    enabled: false
+    # model: gpt-4.1-nano      # LLM for UI generation (TWO_BRAIN only)
+    knowledgeMode: SEARCH      # SEARCH | CONTEXT
+  contextSharing:
+    shareVoiceContext: true     # Speak LLM shares with Show LLM (TWO_BRAIN only)
+    shareSceneContext: true     # Show LLM shares with Speak LLM (TWO_BRAIN only)
+
+# ─── Tool Announcements ────────────────────────────────
+toolAnnouncement:
+  mode: SPEECH                 # SILENT | SPEECH
+  # phrases:                   # Custom announcement phrases
+  #   - "Let me look that up..."
+  #   - "One moment..."
+
+# ─── System Tool Overrides ─────────────────────────────
+# Override descriptions for built-in tools (changes how the agent uses them)
+# systemToolOverrides:
+#   search_knowledge:
+#     description: "Search the product catalog"
+
+# ─── Prompt File Paths (relative to repo root) ─────────
+# These point at the .md files holding your actual prompt text. You can
+# relocate the files anywhere in the repo and update these paths — the
+# deploy will read them from the new location. Omit a path to fall back to
+# the public/prompts/*.md defaults.
+prompts:
+  speakLlm: public/prompts/speak-llm-system-prompt.md
+  showLlm: public/prompts/show-llm-system-prompt.md
+
+# ─── Knowledge Bases ────────────────────────────────────
+# KBs listed here are auto-created if they don't exist.
+# Put document files in a folder and set documentsPath.
+# On first deploy: KB created + files ingested automatically.
+# On subsequent deploys: if files changed, update is staged
+# and must be manually approved in the dashboard.
+# knowledgeBases:
+#   - name: "Product FAQ"
+#     slug: "product-faq"
+#     description: "Product documentation and FAQ"
+#     searchTopK: 5
+#     searchScoreThreshold: 0.3
+#     documentsPath: knowledge/product-faq/
+#   - name: "Company Info"
+#     slug: "company-info"
+#     documentsPath: knowledge/company-info/
+
+# ─── MCP Servers ────────────────────────────────────────
+# If an MCP server listed here doesn't exist in your account,
+# it will be auto-created. Existing servers are reconciled.
+#
+# ⚠ NEVER put raw API keys / bearer tokens in this file. The dashboard's
+#   "Push to GitHub" automatically redacts header / env VALUES to the literal
+#   "<set-in-dashboard>" placeholder; on apply the platform treats that
+#   placeholder as "keep the dashboard value". To rotate a key from the repo,
+#   replace the placeholder with the real value, push, then redact.
+#   (See platform-options.yaml → "Secrets in MCP headers / env" for details.)
+# mcpServers:
+#   - name: "my-api-server"
+#     description: "My custom API"
+#     transportType: HTTP         # HTTP | SSE | STDIO
+#     url: "https://api.example.com/mcp"
+#     headers:
+#       Authorization: "<set-in-dashboard>"
+#     # allowedTools: ["tool1", "tool2"]
+#   - name: "local-tool"
+#     transportType: STDIO
+#     command: "npx"
+#     args: ["-y", "my-mcp-server"]
+#     env:
+#       API_KEY: "<set-in-dashboard>"
+#     # cwd: "/app"
+
+# ─── Connected App Integrations ─────────────────────────
+# OAuth-based apps (Slack, Google Workspace, Microsoft 365, …) are
+# connected once on the Apps page in the dashboard — that's where the
+# OAuth popup runs. platform.yaml CAN'T create them. It only chooses which
+# of your already-connected apps this agent uses, and which of their
+# tools the agent is allowed to call.
+#
+# Reference each app by its `provider` enum (case-sensitive, stable):
+#   SLACK | GOOGLE_WORKSPACE | MICROSOFT_365
+# See public/platform-options.yaml for the full list and tool names.
+#
+# `allowedTools` is optional:
+#   omitted    → all of that app's tools allowed
+#   []         → none allowed (effectively disables tools, keeps assignment)
+#   [name, …]  → explicit allowlist by tool name
+#
+# integrations:
+#   - provider: SLACK
+#     allowedTools:
+#       - slack_post_message
+#       - slack_send_dm
+#   - provider: GOOGLE_WORKSPACE
+#     # all Google tools allowed (no allowedTools key)
+#   - provider: MICROSOFT_365
+#     allowedTools: [outlook_create_event, outlook_send_message, outlook_list_events]
+
+# ─── File Paths (defaults shown) ───────────────────────
+paths:
+  siteFunctions: src/site-functions/register.ts
+  teleComponents: src/components/tele-components/component-registry.ts
+
+# ─── Read-only Info (ignored on import) ─────────────────
+# _info:
+#   siteUrl: ""
+#   subdomain: ""
+#   githubRepo: ""
+
+# ─── Multi-agent Workflow (commented example) ──────────
+# A site uses EITHER agent: (above) OR workflow: (below), never both.
+# Uncomment and fill in to convert this site to a multi-agent workflow.
+# Workflows require sceneGeneration.brainMode: ONE_BRAIN.
+#
+# See .agent/workflows/multi-agent-workflows.md for the full guide.
+# See public/platform-options.yaml (workflow: section) for the field reference.
+#
+# workflow:
+#   name: triage-flow
+#   description: "Intake greets the user, then hands off to a specialist."
+#   entry: intake
+#   # advancedRouting: false
+#   # fastModel: null
+#
+#   agents:
+#     - name: intake
+#       llm:
+#         provider: openai
+#         model: gpt-4o
+#         temperature: 0.7
+#       voice:
+#         provider: elevenlabs
+#       stt:
+#         provider: deepgram
+#         language: en
+#       prompts:
+#         speakLlm: public/prompts/intake.md
+#         showLlm: public/prompts/intake-scene.md
+#       # knowledgeBases: []
+#       # mcpServers: []
+#
+#     - name: support
+#       llm:
+#         provider: openai
+#         model: gpt-4o
+#       prompts:
+#         speakLlm: public/prompts/support.md
+#         showLlm: public/prompts/support-scene.md
+#       # knowledgeBases: [product-faq]
+#       # mcpServers: [crm]
+#
+#   transitions:
+#     - from: intake
+#       to: support
+#       description: "user has a billing or account issue"
+#       # preserveHistory: true
+#       # llmCanTrigger: true
+#
+#     - from: support
+#       to: intake
+#       description: "user's question is outside support scope"

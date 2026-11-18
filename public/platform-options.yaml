@@ -1,0 +1,768 @@
+# platform-options.yaml — Valid configuration values for platform.yaml
+# Reference this file when editing platform.yaml to see all available options.
+# This file is informational only — do not edit it.
+# Last updated: 2026-10-22
+
+# ─── Voice / TTS Providers ──────────────────────────────
+
+voice_providers:
+  - id: elevenlabs
+    name: ElevenLabs
+    models:
+      - id: eleven_flash_v2_5
+        name: Flash v2.5 (Fastest, Multilingual)
+      - id: eleven_turbo_v2_5
+        name: Turbo v2.5 (Deprecated by ElevenLabs, use Flash v2.5)
+      - id: eleven_multilingual_v2
+        name: Multilingual v2 (High quality)
+      - id: eleven_v3
+        name: v3 (Expressive; a live tele runs it as v3 Conversational)
+      - id: eleven_v3_conversational
+        name: v3 Conversational (Expressive, real-time)
+      - id: eleven_v4
+        name: v4 (Most expressive; a live tele runs it as v4 Turbo)
+      - id: eleven_v4_turbo
+        name: v4 Turbo (Most expressive, real-time ~100ms)
+
+  - id: cartesia
+    name: Cartesia
+    models:
+      - id: sonic-2
+        name: Sonic 2 (Default)
+
+  - id: openai
+    name: OpenAI TTS
+    models:
+      - id: tts-1
+        name: TTS-1 (Default, faster)
+      - id: tts-1-hd
+        name: TTS-1 HD (Higher quality)
+
+  # Gemini TTS (MAIN-332). voiceId is the voice's name (Kore, Puck, Fenrir, ...;
+  # 30 prebuilt voices, see list_voices). Set voice.style to direct the delivery
+  # of every line, e.g. style: "excited, high-energy news anchor".
+  - id: google
+    name: Google Gemini
+    models:
+      - id: gemini-3.8-flash-lite-tts
+        name: Gemini 3.8 Flash-Lite (Default, fastest, lowest cost)
+      - id: gemini-3.8-flash-tts
+        name: Gemini 3.8 Flash (Most expressive)
+
+# ─── LLM Providers ─────────────────────────────────────
+
+llm_providers:
+  - id: openai
+    name: OpenAI
+    models:
+      - { id: gpt-4.1-nano, name: "GPT-4.1 Nano (Fastest)" }
+      - { id: gpt-4.1-mini, name: "GPT-4.1 Mini" }
+      - { id: gpt-4.1, name: "GPT-4.1" }
+      - { id: gpt-4o-mini, name: "GPT-4o Mini" }
+      - { id: gpt-4o, name: "GPT-4o" }
+      - { id: gpt-5-nano, name: "GPT-5 Nano" }
+      - { id: gpt-5-mini, name: "GPT-5 Mini" }
+      - { id: gpt-5, name: "GPT-5 (Thinking - higher latency)" }
+      - { id: gpt-5.2, name: "GPT-5.2" }
+      - { id: gpt-5.4, name: "GPT-5.4" }
+      - { id: gpt-5.4-mini, name: "GPT-5.4 Mini" }
+      - { id: gpt-5.4-nano, name: "GPT-5.4 Nano" }
+      - { id: gpt-5.5, name: "GPT-5.5 (Thinking - higher latency)" }
+      - { id: gpt-5.6-luna, name: "GPT-5.6 Luna (Fast)" }
+      - { id: gpt-5.6-terra, name: "GPT-5.6 Terra" }
+      - { id: gpt-5.6-sol, name: "GPT-5.6 Sol" }
+      - { id: gpt-6-luna, name: "GPT-6 Luna (Fastest, cheapest)" }
+      - { id: gpt-6-sol, name: "GPT-6 Sol" }
+      - { id: gpt-6.1-sol, name: "GPT-6.1 Sol (Latest)" }
+      - { id: gpt-6-astra, name: "GPT-6 Astra (Most capable - higher latency)" }
+      - { id: gpt-realtime-2.1, name: "Realtime 2.1 (Voice-to-Voice, Latest)" }
+      - { id: gpt-realtime-2.1-mini, name: "Realtime 2.1 Mini (Cost-efficient)" }
+      - { id: gpt-realtime-2, name: "Realtime 2 (Voice-to-Voice)" }
+      - { id: gpt-realtime-1.5, name: "Realtime 1.5 (Voice-to-Voice)" }
+      - { id: gpt-realtime, name: "Realtime (Voice-to-Voice)" }
+      - { id: gpt-realtime-mini, name: "Realtime Mini (deprecated by OpenAI)" }
+      - { id: gpt-realtime-2.1-half-cascade, name: "Realtime 2.1 Half Cascade" }
+      - { id: gpt-realtime-2.1-mini-half-cascade, name: "Realtime 2.1 Mini Half Cascade" }
+      - { id: gpt-realtime-2-half-cascade, name: "Realtime 2 Half Cascade" }
+      - { id: gpt-realtime-1.5-half-cascade, name: "Realtime 1.5 Half Cascade" }
+      - { id: gpt-realtime-half-cascade, name: "Realtime Half Cascade" }
+      - { id: gpt-realtime-mini-half-cascade, name: "Realtime Mini Half Cascade" }
+
+  - id: anthropic
+    name: Anthropic
+    models:
+      - { id: claude-haiku-4-5, name: "Claude Haiku 4.5 (Fastest)" }
+      - { id: claude-sonnet-4-6, name: "Claude Sonnet 4.6" }
+      - { id: claude-sonnet-5, name: "Claude Sonnet 5 (Latest)" }
+      - { id: claude-opus-4-8, name: "Claude Opus 4.8 (Most capable - higher latency)" }
+
+  - id: google
+    name: Google
+    models:
+      - { id: gemini-3.1-flash-lite, name: "Gemini 3.1 Flash-Lite (Cheapest)" }
+      - { id: gemini-3.5-flash-lite, name: "Gemini 3.5 Flash-Lite (Fastest)" }
+      - { id: gemini-3.5-flash, name: "Gemini 3.5 Flash (Recommended)" }
+      - { id: gemini-3.6-flash, name: "Gemini 3.6 Flash (Latest)" }
+      - { id: gemini-3.1-pro-preview, name: "Gemini 3.1 Pro (Thinking - higher latency)" }
+
+  - id: groq
+    name: Groq
+    models:
+      - { id: openai/gpt-oss-20b, name: "GPT OSS 20B (Fast classifier)" }
+      - { id: openai/gpt-oss-120b, name: "GPT OSS 120B" }
+      - { id: llama-3.3-70b-versatile, name: "Llama 3.3 70B (retiring Aug 2026)" }
+      - { id: llama-3.1-8b-instant, name: "Llama 3.1 8B Instant (retiring Aug 2026)" }
+
+  - id: cerebras
+    name: Cerebras
+    models:
+      - { id: gpt-oss-120b, name: "GPT OSS 120B" }
+
+  - id: together
+    name: Together AI
+    models:
+      - { id: "meta-llama/Llama-3.3-70B-Instruct-Turbo", name: "Llama 3.3 70B Turbo" }
+      - { id: "Qwen/Qwen3.7-Plus", name: "Qwen 3.7 Plus" }
+
+  - id: fireworks
+    name: Fireworks AI
+    models:
+      - { id: "accounts/fireworks/models/gpt-oss-120b", name: "GPT OSS 120B" }
+      - { id: "accounts/fireworks/models/gpt-oss-20b", name: "GPT OSS 20B" }
+
+  - id: deepseek
+    name: DeepSeek
+    models:
+      - { id: deepseek-v4-flash, name: "DeepSeek V4 Flash" }
+      - { id: deepseek-v4-pro, name: "DeepSeek V4 Pro" }
+
+# ─── STT Providers ──────────────────────────────────────
+
+stt_providers:
+  - id: deepgram
+    name: "Deepgram (Default)"
+    models:
+      - { id: nova-3, name: "Nova-3 (multilingual & best accuracy)" }
+      - { id: nova-3-general, name: "Nova-3 General" }
+      - { id: nova-2, name: "Nova-2 (English-focused, lowest latency)" }
+      - { id: nova-2-general, name: "Nova-2 General" }
+      - { id: nova-2-phonecall, name: "Nova-2 Phonecall" }
+  - id: openai
+    name: "OpenAI Whisper"
+    models:
+      - { id: whisper-1, name: "Whisper-1" }
+      - { id: gpt-4o-transcribe, name: "GPT-4o Transcribe" }
+      - { id: gpt-4o-mini-transcribe, name: "GPT-4o Mini Transcribe" }
+  - id: elevenlabs
+    name: "ElevenLabs Scribe"
+    models:
+      - { id: scribe_v2_realtime, name: "Scribe v2 Realtime (streaming)" }
+      - { id: scribe_v2, name: "Scribe v2" }
+      - { id: scribe_v1, name: "Scribe v1 (legacy batch)" }
+  - id: meta
+    name: "Meta Muse Voice Transcribe"
+    models:
+      - { id: muse-voice-transcribe-1.0, name: "Muse Voice Transcribe 1.0" }
+    # Muse is the lowest-cost STT on the platform. It covers 25 languages —
+    # NOT Russian (the only language in the list below it cannot serve). An
+    # agent set to an unsupported language is served by Deepgram instead.
+  - id: assemblyai
+    name: "AssemblyAI (coming soon)"
+    models: []
+
+# agent.stt.model is optional. Leave unset (or null) and the agent picks a
+# default: Deepgram → nova-2 (or nova-3 when language is "multi"); OpenAI →
+# whisper-1; ElevenLabs → scribe_v2_realtime; Meta → muse-voice-transcribe-1.0.
+
+# ─── Avatar Providers ───────────────────────────────────
+
+# Alternative engines are opt-in per organization (super-admin grant) and also
+# need their API key configured on the deployment — an org without the grant
+# gets LiveAvatar regardless of what platform.yaml names.
+avatar_providers:
+  - { id: liveavatar, name: "HeyGen / LiveAvatar (default, every org)" }
+  - { id: runway, name: "Runway Characters (per-org grant)" }
+  - { id: anam, name: "Anam (per-org grant)" }
+
+# ─── Enum Values ────────────────────────────────────────
+
+enums:
+  brainMode:
+    - ONE_BRAIN    # Voice agent LLM generates scenes directly
+    - TWO_BRAIN    # Separate UI Engine generates scenes (default)
+
+  toolAnnouncementMode:
+    - SILENT       # No output when tools are called
+    - SPEECH       # Agent announces tool calls (default)
+
+  uiEngineKnowledgeMode:
+    - SEARCH       # search_knowledge tool per request (default, handles large KBs)
+    - CONTEXT      # Load all KB content into context window (fast, limited size)
+
+  widgetPosition:
+    - bottom-right # Default
+    - bottom-left
+    - top-right
+    - top-left
+
+  mcpTransportType:
+    - HTTP          # Streamable HTTP (most common for remote servers)
+    - SSE           # Server-Sent Events
+    - STDIO         # Local process (command + args)
+
+# ─── Connected App Integrations ────────────────────────
+# OAuth-based providers connected via the Apps page in the dashboard.
+# platform.yaml only references already-connected providers; the OAuth
+# popup must run interactively. Reference by `provider` (case-sensitive
+# enum, exactly as below).
+#
+# Each provider exposes a fixed set of tools. Use the names below in
+# `allowedTools:` on the agent to scope what each agent can call.
+
+integration_providers:
+  SLACK:
+    description: "Post messages, read channels, send DMs in your Slack workspace."
+    tools:
+      slack_list_channels:        "List channels the bot has been added to."
+      slack_post_message:         "Post a message to a Slack channel (or thread)."
+      slack_get_channel_history:  "Read recent messages from a channel."
+      slack_list_users:           "List workspace users."
+      slack_lookup_user_by_email: "Find a user by email address."
+      slack_send_dm:              "Send a direct message to a user."
+
+  GOOGLE_WORKSPACE:
+    description: "Gmail, Google Calendar, Google Drive."
+    tools:
+      google_calendar_list_events:    "List events from a Google Calendar."
+      google_calendar_create_event:   "Create a new calendar event."
+      google_calendar_update_event:   "Update an existing calendar event."
+      google_calendar_delete_event:   "Delete a calendar event."
+      google_gmail_list_messages:     "List Gmail messages matching a query."
+      google_gmail_get_message:       "Get a specific Gmail message by ID."
+      google_gmail_send_message:      "Send an email via Gmail."
+      google_drive_list_files:        "List files in Google Drive."
+      google_drive_get_file:          "Get metadata for a Drive file."
+
+  MICROSOFT_365:
+    description: "Outlook Mail & Calendar, OneDrive via Microsoft Graph."
+    tools:
+      outlook_list_messages:  "List recent Outlook email messages."
+      outlook_get_message:    "Get a specific Outlook message by ID."
+      outlook_send_message:   "Send an Outlook email."
+      outlook_list_events:    "List upcoming Outlook calendar events."
+      outlook_create_event:   "Create a new Outlook calendar event."
+      outlook_update_event:   "Update an existing Outlook calendar event."
+      outlook_delete_event:   "Delete an Outlook calendar event."
+      onedrive_list_files:    "List files in the user's OneDrive."
+      onedrive_get_file:      "Get metadata for a OneDrive item."
+
+# Allowedtools semantics (matches MCP servers):
+#   field omitted → all tools allowed
+#   []            → no tools allowed
+#   [name, ...]   → explicit allowlist
+
+# ─── MCP Server Fields ─────────────────────────────────
+# Servers listed in platform.yaml are auto-created if they don't exist.
+# Sensitive fields (headers, env vars) must be set in the dashboard.
+
+mcp_server_fields:
+  name: "Required. Server name (must be unique per client)."
+  description: "Optional. Human-readable description."
+  transportType: "Required for auto-creation. HTTP | SSE | STDIO."
+  url: "HTTP/SSE only. The MCP server endpoint URL."
+  headers: "HTTP/SSE only. Auth headers as key-value pairs (e.g. Authorization: Bearer ...)."
+  command: "STDIO only. The command to run (e.g. 'npx', 'python')."
+  args: "STDIO only. Array of arguments (e.g. ['-y', 'my-server'])."
+  env: "STDIO only. Environment variables as key-value pairs (e.g. API_KEY: sk-...)."
+  cwd: "STDIO only. Working directory for the command."
+  allowedTools: "Optional. Array of tool names to expose (null = all tools)."
+  useProxy: "Optional. HTTP/SSE only. Route through the Mobeus proxy (single static egress IP) — use when the server is behind an IP allowlist."
+  authMode: "Optional. STATIC (default) uses the static headers above. USER_TOKEN forwards the signed-in end user's own bearer token, scoped per user (implies useProxy). HTTP/SSE only. Requires the tele UI to push the user's token."
+
+# Example — top-level mcpServers definitions (referenced by name from
+# agent.mcpServers / agents[].mcpServers). Auto-created on first deploy.
+#
+# mcpServers:
+#   # 1) Standard server with a static API key:
+#   - name: my-crm
+#     transportType: HTTP
+#     url: https://mcp.example.com/mcp
+#     headers:
+#       Authorization: Bearer sk-...      # sensitive — prefer setting in dashboard
+#     allowedTools: [search, create_ticket]
+#
+#   # 2) Per-user token server (e.g. BrightNight cockpit):
+#   - name: cockpit
+#     transportType: HTTP
+#     url: https://cockpit.brightnightpower/mcp
+#     authMode: USER_TOKEN                 # forwards the signed-in user's token
+#     # useProxy is forced on automatically for USER_TOKEN
+#     allowedTools: [dashboard, gauge-metrics, compare-periods]
+#
+# agent:                                   # (or agents[] in a workflow)
+#   mcpServers: [my-crm, cockpit]          # attach by name
+
+# ─── UI Engine Models ───────────────────────────────────
+
+ui_engine_models:
+  - { id: gpt-4.1-nano, name: "GPT-4.1 Nano (Default, fastest)" }
+  - { id: gpt-4o-mini, name: "GPT-4o Mini" }
+  - { id: gpt-4o, name: "GPT-4o" }
+
+# ─── Realtime Voices ────────────────────────────────────
+# Only used when agent.llm.model is a gpt-realtime-* model.
+# Set agent.voice.voiceId to one of these values.
+
+realtime_voices:
+  - alloy
+  - ash
+  - ballad
+  - cedar
+  - coral
+  - echo
+  - marin        # Default for Realtime models
+  - sage
+  - shimmer
+  - verse
+
+# ─── Language Codes (common) ────────────────────────────
+# agent.stt.language accepts any valid language code, or "multi" for
+# automatic multilingual detection / code-switching (Deepgram nova-3:
+# English, Spanish, French, German, Hindi, Russian, Portuguese, Japanese,
+# Italian, Dutch — or Whisper auto-detect when sttProvider is "openai").
+# Meta Muse auto-detects on "multi" too, but does not cover Russian, Swedish,
+# Danish, Finnish or Norwegian — those fall back to Deepgram.
+# Common codes (Deepgram/Whisper supported):
+
+languages:
+  - { id: multi, name: Multilingual (auto-detect) }
+  - { id: en, name: English }
+  - { id: es, name: Spanish }
+  - { id: fr, name: French }
+  - { id: de, name: German }
+  - { id: pt, name: Portuguese }
+  - { id: it, name: Italian }
+  - { id: nl, name: Dutch }
+  - { id: ja, name: Japanese }
+  - { id: zh, name: Chinese }
+  - { id: ko, name: Korean }
+  - { id: ru, name: Russian }
+  - { id: ar, name: Arabic }
+  - { id: hi, name: Hindi }
+  - { id: tr, name: Turkish }
+  - { id: pl, name: Polish }
+  - { id: sv, name: Swedish }
+  - { id: da, name: Danish }
+  - { id: fi, name: Finnish }
+  - { id: "no", name: Norwegian }
+
+# ─── Workflow (multi-agent) ─────────────────────────────
+# A workflow is a graph of agents connected by transitions.
+# A site has either `agent:` (single-agent) OR `workflow:` (multi-agent),
+# never both, never neither. Workflows REQUIRE
+# sceneGeneration.brainMode = ONE_BRAIN.
+#
+# See `.agent/workflows/multi-agent-workflows.md` in this template for a
+# step-by-step guide.
+
+workflow:
+  # ── Top-level workflow fields ─────────────────────────
+  name: string                  # required — unique per client
+  description: string?          # optional — shown in the editor
+  entry: string                 # required — must match an agents[].name
+  advancedRouting: boolean      # default false — enables fast-model
+                                # routing (auto-injects transfer_to_*
+                                # tools, scored by a small LLM)
+  fastModel: string?            # required when advancedRouting = true
+                                # (e.g. "groq:openai/gpt-oss-20b")
+  fastModelPrompt: string?      # optional — system instruction for the
+                                # classifier LLM. Tells the model HOW to
+                                # decide which agent to hand off to. The
+                                # runtime fills in the actual list of
+                                # transitions and the user's utterance, so
+                                # this prompt should NOT duplicate either.
+                                # Leave omitted to use the built-in default.
+
+  # ── agents: at least one ──────────────────────────────
+  # Each entry uses the same fields as the single-agent `agent:` block
+  # (llm, voice, stt, behavior, avatar) plus the per-agent fields below.
+  agents:
+    - name: string              # required — unique within workflow,
+                                # used by transitions and transferAgent()
+      llm:                      # see llm_providers above
+        provider: string
+        model: string
+        temperature: number     # 0.0 – 2.0
+      voice:                    # see voice_providers above
+        provider: string
+        voiceId: string?
+        model: string?
+      stt:                      # see stt_providers above
+        provider: string
+        language: string
+      knowledge:
+        maxTotalResults: integer?      # 1 – 20, default unset (no cap). Caps the
+                                       # TOTAL results one knowledge search returns
+                                       # across all attached KBs combined, keeping
+                                       # the best-scoring ones. Each KB still
+                                       # contributes at most its own per-KB limit.
+      behavior:
+        allowInterruptions: boolean
+        interruptionThreshold: number  # 0.0 – 1.0, default 0.5. How sure the tele
+                                       # must be it heard speech before it stops
+                                       # talking. Raise for noisy rooms.
+        minInterruptionWords: integer  # 0 – 10, default 0. Ignore interruptions
+                                       # shorter than N words (brief sounds).
+        endpointingDelay: number       # 0.0 – 3.0 seconds, default 0.5. Silence
+                                       # before the tele decides the user is done.
+        turnDetection: semantic | vad  # default semantic: an end-of-turn model
+                                       # hears whether the sentence sounds
+                                       # finished and waits longer through a
+                                       # mid-thought pause. vad: silence only.
+        maxEndpointingDelay: number?   # 0.5 – 5.0 seconds, default 2.5 (omit).
+                                       # Longest wait when the user sounds
+                                       # unfinished (semantic only). null clears.
+      avatar:
+        enabled: boolean
+        provider: string?
+        avatarId: string?
+        greetingWaitsForReady: boolean?  # default false. When true, the greeting
+                                         # waits for the avatar video to connect so
+                                         # audio + video appear together. When false,
+                                         # the greeting plays immediately (audio is
+                                         # faster than the avatar connect time).
+
+      # ── Per-agent prompt files (paths relative to repo root) ──
+      # speakLlm is required; showLlm is optional (one-brain scene
+      # rendering description for this agent). The speakLlm file is read on
+      # every deploy and written to THIS agent's prompt (MAIN-174).
+      prompts:
+        speakLlm: string        # required — path to .md file
+        showLlm: string?        # optional — per-agent scene_viewer prompt
+
+      # ── Per-agent KB / MCP / tool overrides ───────────
+      knowledgeBases: [string]  # KB slugs (referenced from top-level
+                                # knowledgeBases definitions)
+      mcpServers: [string]      # MCP server names (referenced from
+                                # top-level mcpServers definitions)
+      systemToolOverrides:
+        scene_viewer:
+          description: string?
+        # ... any built-in tool name ...
+      siteFunctions: [string]   # MAIN-176 — the site functions THIS voice
+                                # may call (omit = all of the site's)
+
+  # ── transitions: edges in the agent graph ─────────────
+  transitions:
+    - from: string              # required — must match an agents[].name
+      to: string                # required — must match an agents[].name
+      description: string       # required, non-empty — what the LLM sees
+                                # when deciding to call transfer_to_<to>
+      preserveHistory: boolean  # default true — when false, the next
+                                # agent starts with empty chat context
+      llmCanTrigger: boolean    # default true — when false, the LLM
+                                # cannot trigger this edge (frontend-only
+                                # via transferAgent())
+      handoffPhrase: string?    # optional — spoken by the outgoing agent
+                                # before the swap. Plain text, no SSML.
+                                # e.g. "Let me bring in our specialist."
+
+# Validation rules (enforced by the deserializer):
+#   - workflow.entry must reference an agents[].name.
+#   - Every transitions[].from and to must reference an agents[].name.
+#   - Every transitions[].description must be non-empty.
+#   - Agent names within a workflow are unique.
+#   - No duplicate (from, to) pairs.
+#   - advancedRouting=true requires fastModel.
+#   - sceneGeneration.brainMode must be ONE_BRAIN when workflow: is present.
+#   - platform.yaml must contain workflow: OR agent:, never both, never neither.
+
+# ─── Greeting ───────────────────────────────────────────
+# Two independent greetings exist:
+#   site.greeting   — text shown in the widget UI before the call starts.
+#   agent.greeting  — the first thing the agent SAYS when the call connects.
+# Both are plain strings (max 500 chars). Omit either to leave the current
+# dashboard value unchanged.
+#
+#   site:
+#     greeting: "Welcome! Tap to talk."
+#   agent:
+#     greeting: "Hi there — how can I help you today?"
+
+# ─── Silent reply ───────────────────────────────────────
+# agent.silentReply (also per workflow agent): a reply that is ONLY this token,
+# ignoring whitespace, punctuation and case, is never spoken — the agent goes
+# straight back to listening and the transcript marks the turn silent.
+# Max 100 chars. Omit to leave the dashboard value; null turns it off.
+#
+#   agent:
+#     silentReply: "(listening)"
+
+# ─── Path Prefix (reverse proxy under a sub-path) ───────
+# Set `site.pathPrefix` when your own CDN / reverse proxy (e.g. CloudFront)
+# serves this site under a sub-path of your domain, e.g.
+# https://example.com/ai/works/ai-expert → <subdomain>.sites.mobeus.ai.
+# The build bakes the prefix into all asset URLs (Next.js basePath — the
+# template's next.config.ts reads it from NEXT_PUBLIC_BASE_PATH), and the
+# deploy maps the prefixed paths back to the site root on our origin, so the
+# direct <subdomain>.sites.mobeus.ai URL keeps working too. Your proxy should
+# forward request paths to the origin AS-IS (no stripping needed).
+#
+# Rules: must start with "/", segments limited to letters, digits, ".", "_",
+# "-"; no trailing slash; max 200 chars. Set to null to go back to serving at
+# the root. NOTE: hardcoded references to public/ files in your own code
+# (e.g. <img src="/logo.svg">) are NOT rewritten by Next.js — prefix them
+# with process.env.NEXT_PUBLIC_BASE_PATH yourself.
+#
+#   site:
+#     pathPrefix: /ai/works/ai-expert
+
+# ─── AirVision: touchless hand control ─────────────────
+# Adds an opt-in "Enable hand control" button to the tele. Visitors drive the
+# page with their hand via the webcam (pinch thumb+index to click). All vision
+# processing runs on the visitor's device — the camera stream never leaves the
+# browser. `enabled` only takes effect when your org is entitled to AirVision
+# (a platform grant); ask your account team if it isn't. Set the block to null
+# to disable and clear any overrides.
+#
+#   site:
+#     airVision:
+#       enabled: true             # activate on this tele (needs org entitlement)
+#       hand: any                 # left | right | any (which hand drives the cursor)
+#       sensitivity: 0.6          # 0..1 cursor responsiveness (higher = snappier)
+#       mirror: true              # selfie-mirror the movement (recommended)
+#       themeColor: "#4F8CFF"     # accent for the rendered hands (defaults to widget color)
+#       # engine / renderer: advanced — swap the detection/visual backend by id
+#       engine: mediapipe-hands
+#       renderer: glow-hands
+
+# ─── Prompt File Paths (single-agent) ──────────────────
+# The `prompts` section points at the .md files that hold your prompt TEXT
+# (platform.yaml carries settings, not prompt bodies). Paths are relative to
+# the repo root and may be relocated anywhere — the deploy reads them from
+# wherever you point. Omit a path to fall back to the public/prompts/*.md
+# default.
+#
+#   prompts:
+#     speakLlm: src/prompts/agent.md     # voice-agent system prompt
+#     showLlm:  src/prompts/scene.md     # show-LLM / scene-viewer prompt
+
+# ─── widget: appearance + position ─────────────────────
+# Controls the floating voice widget's look. See enums.widgetPosition above.
+#
+#   widget:
+#     position: bottom-right      # bottom-right | bottom-left | top-right | top-left
+#     primaryColor: "#000000"     # hex accent color used on the bubble
+
+# ─── sceneGeneration: scene rendering brain mode ───────
+# Controls how the agent decides what to show on screen.
+# brainMode + uiEngine options live on top-level enums above.
+#
+#   sceneGeneration:
+#     brainMode: ONE_BRAIN
+#     uiEngine:
+#       enabled: true
+#       model: gpt-4o-mini        # short, fast model recommended
+#       knowledgeMode: SEARCH     # SEARCH | CONTEXT
+#     contextSharing:
+#       shareVoiceContext: true
+#       shareSceneContext: true
+
+# ─── toolAnnouncement: spoken tool-call narration ──────
+# Whether the agent says "let me search that for you" before running a tool.
+# `phrases` is the global pool. `phrasesByTool` overrides per tool name.
+#
+#   toolAnnouncement:
+#     mode: SPEECH                # SPEECH | SILENT
+#     phrases:
+#       - "One moment."
+#       - "Let me check."
+#     phrasesByTool:
+#       search_knowledge:
+#         - "Looking that up."
+
+# ─── paths: where the deploy expects shared registries ─
+# Override these only if your repo lays out the registries differently.
+#
+#   paths:
+#     siteFunctions:  src/site-functions/register.ts
+#     teleComponents: src/components/tele-components/component-registry.ts
+
+# ─── defaults: voice session defaults ──────────────────
+# Per-session defaults applied when a user opens the widget. These can be
+# overridden by the user mid-session (mic/volume mute, avatar toggle).
+#
+#   defaults:
+#     avatarEnabled: true     # run an avatar at all; false = never started,
+#                             # never offered to the visitor, never billed
+#     avatarVisible: true     # avatar starts visible (vs minimized). Hiding it
+#                             # does NOT stop the stream or the billing —
+#                             # use avatarEnabled: false for that
+#     micMuted: false         # mic on at session start
+#     volumeMuted: false      # speaker on at session start
+#     knowledgeMaxTotalResults: 4  # 1 – 20, default unset. Per-WEBSITE override of
+#                                  # agent.knowledge.maxTotalResults (total records
+#                                  # one knowledge search returns across all KBs).
+#                                  # Omit to inherit the agent's cap; null clears.
+
+# ─── sessionLifecycle: tele-level session timeouts ─────
+# Overrides the org / platform session-lifecycle policy FOR THIS WEBSITE only.
+# Resolution cascade at runtime: this block ?? org default ?? platform default.
+# Omit a field to inherit; set it to override. These are web/widget settings —
+# phone sessions resolve org→platform (phone numbers are org-scoped), so there
+# are no phone fields here; set phone overrides at the org level instead.
+# All seconds values are capped at 86400 (1 day).
+#
+#   sessionLifecycle:
+#     enabled: true              # master switch for automatic timeouts
+#     webIdleTimeoutSec: 180     # end after this much silence (no human speech)
+#     webMaxDurationSec: 600     # hard cap regardless of activity (e.g. 10 min)
+#     afterUserLeavesSec: 60     # grace before ending once the last human leaves
+#     prewarmGraceSec: 180       # sweep un-activated pre-warm rooms after this
+
+# ─── decisionTool: Jev picks the certified card (MAIN-175) ─────
+# This site's own settings for the decision tool (TypeSafe Jev). Wins over the
+# organisation's settings. The tool is only ON when a super admin has granted
+# it to the organisation (platform-admin → Clients → org → Decision tool).
+# `null` clears these and falls back to the organisation's settings.
+#
+#   decisionTool:
+#     instructions: Which certified card answers what the visitor just said?
+#     options: { source: site_catalog }   # manual | certified_scenes | site_catalog
+#     catalog: platform/decision-catalog.json   # read on every deploy (site_catalog)
+#     threshold: 0.7                      # below this nothing confident is applied…
+#     fallbackKey: GAP                    # …except this card, if set (apply only)
+#     trigger: before_reply               # llm | every_turn | before_reply
+#     action: apply                       # return | apply
+#     apply: { siteFunction: showMoment, argName: card, exclusive: false }
+#     includeStay: true                   # a "nothing new" option for follow-ups
+#     contextTurns: 4
+#
+# The catalog file is a JSON array of options (2 to 2000):
+#   [{ "key": "Q06", "description": "How GLP-1 medicines work. Asked as: ...",
+#      "agent": "live_nori",              # only this workflow agent is offered it
+#      "say": "Exact approved line"       # spoken word for word (before_reply)
+#   }, ...]
+# `before_reply` waits for the pick before the tele answers, so the answer is
+# written with the card already on screen; a card with `say` is spoken as is.
+# ─── memory: remember consenting visitors (MAIN-179) ─────
+# With memory on, each voice keeps a short summary of what a visitor told it,
+# but only after the visitor agrees (30 days, one year or until deleted).
+# The site's own consent and "forget me" controls call /api/widget/memory;
+# forgetting removes the memory, the consent, the visitor's reel likes and
+# the transcripts of their sessions on this site. Needs conversation capture.
+#
+#   memory:
+#     enabled: true
+
+# ─── allowance: a token wallet for each visitor ─────
+# With the site's visitor wallet on (an org owner or admin switches it on in the
+# dashboard: Website → Visitor wallet; this file cannot), each visitor starts
+# with `grant` tokens, given once at their first call, and spends them by the
+# seconds they talk at LiveCast's rate (10,000 tokens an hour, 167 a minute).
+# A minute before zero the voice says the call ends in about a minute; at zero
+# it counts down 15 s, says goodbye and ends the call; the server ends it 30 s
+# after zero at the latest. The site reads the balance and talk time per voice
+# from /api/widget/wallet and hears `wallet.warning` / `wallet.countdown` on the
+# room data topic `mobeus.wallet` (docs/visitor-wallet.md in the platform repo).
+# Without sign-in it is a nudge, not a limit (clearing storage starts again).
+# These tokens are the site's own, never the organization's credits.
+#
+#   allowance:
+#     grant: 1000            # starting tokens (default 1000, about 6 minutes)
+
+# ─── hostCall: bring the site's human host into a web call ─────
+# The advisor can offer to bring in the host (a person, e.g. "Geof Corb").
+# On the visitor's yes it dials the host's mobile into the same call. The
+# advisor then listens without speaking (stay_muted) until asked back in by
+# name, and can be told to leave. Status reaches the page on the room data
+# topic `mobeus.host_call` (see docs/host-call.md in the platform repo).
+# The host's PHONE NUMBER never goes in this file: an org owner/admin sets it
+# in the dashboard (Website → Host call), where it is stored encrypted.
+#
+#   hostCall:
+#     enabled: true
+#     label: "Geof Corb"              # spoken and shown
+#     maxPerSession: 1                # dial attempts per visit (default 1)
+#     maxPerDay: 10                   # per site, rolling 24h (default 10)
+#     aiBehaviorDefault: stay_muted   # stay_muted (default) | stay_active
+#     smsOnRing: false                # text the host the reason while it rings
+#     ringTimeoutSec: 25              # 10-45 (default 25)
+#     hearHost: true                  # advisor follows the host in memory (never saved)
+#     wakeWords: [Marcus]             # default: each advisor's own name
+#     hours:                          # omit = any time
+#       timezone: America/New_York
+#       windows:
+#         - { days: [mon, tue, wed, thu, fri], start: "09:00", end: "17:00" }
+
+# ─── integrations: connected OAuth apps (Slack, Google, etc.) ───
+# OAuth-based integrations are CONNECTED once via the Apps page in the
+# dashboard — `platform.yaml` cannot create them (the OAuth popup must run
+# interactively). Use this section to say which connected integrations this
+# agent can call, and (optionally) which of their tools.
+# See `integration_providers:` higher up for the full provider enum + tool
+# names.
+#
+#   integrations:
+#     - provider: SLACK
+#       allowedTools: [slack_post_message, slack_list_channels]
+#     - provider: GOOGLE_WORKSPACE
+#       # omit allowedTools to grant every tool the provider exposes
+
+# ─── Secrets in MCP headers / env ──────────────────────
+# Never put raw API keys or bearer tokens in this YAML. Even private repos
+# leak secrets through git history, mirrors/forks, CI logs, and GitHub's
+# secret-scanning (which will warn loudly).
+#
+# The platform handles this for you:
+# - The dashboard's "Push to GitHub" REDACTS every header / env VALUE to the
+#   literal "<set-in-dashboard>" placeholder. The keys still round-trip so
+#   the shape (which headers exist, which env vars exist) stays declarative.
+# - On apply, the deserializer treats "<set-in-dashboard>" as "leave the
+#   dashboard value alone" — so pushing a serialized YAML never overwrites a
+#   real secret with the literal placeholder.
+# - Setting a REAL value in YAML still overwrites the dashboard (intentional,
+#   for "rotate bearer key" via repo). Just rotate, push, then redact again.
+#
+# Example shape the serializer emits:
+#
+#   mcpServers:
+#     - name: crm
+#       transportType: HTTP
+#       url: https://crm.example.com/mcp
+#       headers:
+#         Authorization: "<set-in-dashboard>"   # value lives in the dashboard
+#       env:
+#         CRM_TENANT_ID: "<set-in-dashboard>"
+#
+# To rotate the key from the repo: replace the placeholder with the real
+# value, push, then the platform applies it. Then push from the dashboard
+# again to redact it back to the placeholder.
+
+# ─── TTS Pronunciation Overrides ───────────────────────
+# Regex patterns rewritten in the LLM's text before TTS speaks it.
+#
+# Belongs nested UNDER `agent:` — NOT at the top level. Top-level placement
+# is silently dropped because the schema attaches ttsReplacements per-agent
+# (a common cause of "I added ttsReplacements but they don't show up").
+# Each rule: { pattern, replacement, label? }. Up to 500 rules per agent.
+#
+#   agent:
+#     ttsReplacements:
+#       - pattern: "API"
+#         replacement: "ay pee eye"
+#       - pattern: "WSJ"
+#         replacement: "Wall Street Journal"
+#         label: "expand acronym"            # optional, dashboard-only
+
+# ─── Settings reach BOTH web and phone agents ──────────
+# Anything you set here flows into the platform database via the deploy. Web
+# sessions and phone (LiveKit SIP) calls both read from the same agent rows,
+# so settings here affect every channel the agent runs on. The phone path
+# does NOT read this file directly at call time — it queries the DB, which
+# the deploy already updated for it.
+
+# ─── A note on this file ───────────────────────────────
+# platform-options.yaml is a human/agent REFERENCE only — nothing reads it at
+# deploy time. Repos created before this file existed deploy fine without it;
+# it is safe to add, omit, or regenerate from the starter template at any time.

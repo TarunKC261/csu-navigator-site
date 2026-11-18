@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# AirVision runtime assets (generated at build time)
+/public/airvision/models/
+/public/airvision/wasm/
