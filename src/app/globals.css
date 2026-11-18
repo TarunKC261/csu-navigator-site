@@ -235,7 +235,28 @@ body {
      one `.btn-coin`), moving its LEFT edge left by a coin so the strip controls and
      the shroud follow it left, and giving the strip room for a dead-centre zoom.
      Paired with --avatar-shift-x below (avatar also moved left a coin). */
-  --avatar-col-w: calc(clamp(14rem, min(32vw, calc(0.92 * (100dvh - 116px))), 40rem) + 2rem);
+  /* 2026-11-19: 32vw/0.92 -> 36vw/0.72. THE VERTICAL GAP.
+     The avatar is object-fit:contain anchored CENTER BOTTOM, so her rendered
+     height is (column width / frame aspect) x --avatar-scale. Her height
+     therefore followed the column WIDTH while the row height followed the
+     viewport HEIGHT, and the two are not related. Whenever
+     width/height came out smaller than it did on the machine this was tuned
+     on, she got shorter than her row and sat at the bottom of it, leaving
+     white space between the header and the top of her frame.
+
+       1223x623 viewport -> col 423, width/height 0.772   (tuned here, flush)
+       1699x935 viewport -> col 576, width/height 0.664   (short, gap on top)
+
+     Both viewports are from session logs, not from measuring screenshots:
+     dpr is 1.5 on both machines, so a 1834x934 capture is a 1223x623 page.
+
+     Driving the column from the ROW HEIGHT instead makes that ratio a
+     constant, so she fills her row by the same amount on every screen.
+     0.772 reproduces 423px on the machine above, so that machine does not
+     move at all. 40vw stays as the guard for narrow viewports, where
+     the content column needs protecting; it simply no longer binds first on
+     an ordinary laptop. The clamp still caps her at 40rem. */
+  --avatar-col-w: calc(clamp(14rem, min(40vw, calc(0.772 * (100dvh - 116px))), 40rem) + 2rem);
 
   /* Room plate scale. `background-size: auto var(--room-h)` is height-driven.
      Note the direction of this control: at 100% the plate's FULL vertical extent

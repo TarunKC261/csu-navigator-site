@@ -222,7 +222,13 @@ export function WelcomeLanding() {
           spacing below is tuned to fit ~860px+ without scrolling, but a
           1366x768 laptop has ~590px and must still be able to reach the CTA. */}
       <main className="scene-pad-x relative flex min-h-0 flex-1 items-start overflow-y-auto pb-3 pt-5">
-        <div className="w-full max-w-[68rem] space-y-2.5">
+        {/* my-auto, not items-center on the parent: an auto margin absorbs
+            spare space and collapses to 0 when there is none, so a row TALLER
+            than the content centres it and a row SHORTER than the content
+            still starts at the top and scrolls. Centring on the flex parent
+            would clip the top in the short case, which is the bug the other
+            gates in this app already carry a comment about. */}
+        <div className="my-auto w-full max-w-[68rem] space-y-2.5">
           {/* Eyebrow */}
           <p
             className="animate-slide-in-left font-data text-[11px] font-medium uppercase tracking-[0.25em] text-[#5A5A5A]"
