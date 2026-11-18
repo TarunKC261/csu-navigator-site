@@ -81,6 +81,25 @@ const AVATAR_LAYER: React.CSSProperties = {
   transformOrigin: 'center bottom',
 };
 
+/**
+ * Does this avatar need green-screen removal?
+ *
+ * FALSE for the CSU avatar, and that is not a preference. `chromaKey.ts`
+ * exists because "LiveAvatar green-screen avatars arrive as a normal
+ * MediaStream with a solid green backdrop". This one does not: its stream
+ * carries a real room, which is why the room is visible at all with the room
+ * plate off. Keying it hunted for pixels greener than their own red and blue,
+ * found the plant behind her shoulder, and punched ragged holes in it that
+ * showed the white base underneath, in the same place every frame.
+ *
+ * With this false the keyer never starts and the stream is shown directly, so
+ * the per-frame canvas pass costs nothing either.
+ *
+ * Set it true for an avatar that really does arrive on green; the cpu/webgl
+ * chip in the debug panel then chooses which keyer runs.
+ */
+const CHROMA_KEY = false;
+
 export function BackgroundLayer() {
   /**
    * Room plate: OFF by default, toggled with Ctrl+Shift+B, persisted.
@@ -168,6 +187,13 @@ export function BackgroundLayer() {
     if (!video || !canvas || !avatarVideoTrack || !showAvatarVideo) return;
 
     avatarVideoTrack.attach(video);
+
+    if (!CHROMA_KEY) {
+      logEvent('media', 'chroma: off, stream rendered directly');
+      return () => {
+        try { avatarVideoTrack.detach(video); } catch { /* already detached */ }
+      };
+    }
 
     let stopChromaKey: (() => void) | null = null;
     if (chromaMode === 'webgl') {
@@ -281,8 +307,10 @@ export function BackgroundLayer() {
               inset: 0,
               width: '100%',
               height: '100%',
-              opacity: 0,
+              opacity: CHROMA_KEY ? 0 : isConnected ? 1 : 0,
+              transition: 'opacity 0.6s ease',
               pointerEvents: 'none',
+              ...(CHROMA_KEY ? null : AVATAR_LAYER),
             }}
           />
 
@@ -299,7 +327,7 @@ export function BackgroundLayer() {
               inset: 0,
               width: '100%',
               height: '100%',
-              opacity: isConnected ? 1 : 0,
+              opacity: CHROMA_KEY ? (isConnected ? 1 : 0) : 0,
               transition: 'opacity 0.6s ease',
               ...AVATAR_LAYER,
             }}
