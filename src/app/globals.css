@@ -96,12 +96,15 @@
   --theme-footer-text: rgba(4, 30, 66, 0.6);
 
   /* ── Brand tokens (CSU colours; the --henkel-* names are kept so every component keeps working) ── */
-  --henkel-red: #C91235;
-  --henkel-red-hover: #A00E2A;
+  --henkel-red: #CF102D; /* CSU red, same as the logo */
+  --henkel-red-hover: #A50D24;
   --henkel-ink: #1A1A1A;
   --henkel-ink-muted: #5A5A5A;
   --henkel-surface: #FFFFFF;
-  --henkel-surface-alt: #F5F7FA;
+  --henkel-surface-alt: #F2F2F2;
+  /* CSU look (2026-11-18): light grey page, grey card panels, white boxes inside. */
+  --csu-page: #F2F2F2;
+  --csu-card: #E8E8E8;
   --henkel-border: #E5E7EB;
   --henkel-success: #16A34A;
   --henkel-elevation: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -114,7 +117,7 @@
   --csu-ink: var(--henkel-ink);
   --csu-ink-muted: var(--henkel-ink-muted);
   --csu-surface: var(--henkel-surface);
-  --csu-surface-alt: var(--henkel-surface-alt);
+  --csu-surface-alt: #FFFFFF; /* boxes inside a grey card */
   --csu-border: var(--henkel-border);
   --csu-success: var(--henkel-success);
   --csu-danger: #8E0D25;
@@ -125,7 +128,7 @@
 
 /* ── Body background ── enterprise neutral */
 body {
-  background-color: #F5F7FA;
+  background-color: var(--csu-page);
   color: #1A1A1A;
   transition: background-color 0.6s ease, color 0.6s ease;
 }
@@ -972,7 +975,7 @@ body {
      be a permanent grey `--theme-card-bg` + blur, which is why the error card looked
      frosted-grey all the time and did not respond to the chip. No reason for it to be
      the odd one out. */
-  background: #FFFFFF;
+  background: var(--csu-card);
   border: 1px solid var(--theme-card-border);
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
@@ -1077,7 +1080,7 @@ body[data-avatar-blend="frosted"] .dx-card {
      never width or padding. Text and inner boxes are opaque children, unaffected.
      Solving the inner-box overlap (a grey pill / a button sitting over her) is the
      NEXT step, once the surfaces are agreed. */
-  background: rgba(255, 255, 255, 0.66) !important;
+  background: rgba(232, 232, 232, 0.66) !important;
 }
 
 body[data-avatar-blend="frosted"] .dx-card {

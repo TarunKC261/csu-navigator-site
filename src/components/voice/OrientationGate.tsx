@@ -44,10 +44,10 @@ export function OrientationGate() {
                 <path d="M3.5 9.5a8 8 0 0 0 0 5" />
             </svg>
             <p className="font-hero text-lg font-bold" style={{ color: '#1A1A1A' }}>
-                Please rotate your device
+                Turn your device sideways
             </p>
             <p className="font-data text-sm" style={{ color: '#5A5A5A' }}>
-                The CSU Student Engagement Platform needs landscape orientation.
+                The Student Engagement Platform works in landscape.
             </p>
         </div>
     );

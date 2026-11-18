@@ -29,7 +29,7 @@ export const NOTICE_SECTIONS: NoticeSection[] = [
     {
         label: 'About this demo',
         body: [
-            'The CSU Student Engagement Platform is a demonstration of an AI guide for students admitted to the California State University. It is not an official CSU service, and nothing you do here submits a form, books an appointment or sends a message.',
+            'This is a demo of the Student Engagement Platform, an AI guide for students admitted to the California State University. It is not an official CSU service. Nothing you do here submits a form, books an appointment or sends a message.',
         ],
     },
     {

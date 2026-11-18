@@ -80,6 +80,20 @@ site's publishable key, exactly as the stock Mobeus starter does. Use sample dat
 - Not merged: Venkat's `?sid=` cohort and server routes (SMS, forms, calendar, real OTP), his plaintext demo login,
   the drawn `CsuMark`, log-to-disk.
 
+## Look and name (2026-11-18)
+
+The product is called **Student Engagement Platform**, shown with a **CSU demo** tag: we present it as the SEP
+built for a CSU demo, so "CSU" is never put in front of the product name (page title, header, sign-in, code text
+message, greetings, calendar invites, Val prompt v1.9).
+
+- **Logo:** `public/brand/csu-mark.png`, the red CSU block taken from the logo on calstate.edu (set in config.js
+  `BRAND_LOGO_URL`). A thin white keyline keeps it visible on the red header. CSU brand rules say not to alter
+  their logo, so ask before showing this crop to CSU people, or swap in a file from CSU Marketing Communications.
+- **Colours:** header bar CSU red `#CF102D`; page light grey `--csu-page`; card panels grey `--csu-card` with
+  white boxes inside; CSU cards size to their content instead of filling the column.
+- **Wording:** short, plain sentences in all six languages. Val prompt v1.9 has a "How cards read" section so the
+  text she writes on cards follows the same style.
+
 ## Build
 
 ```bash

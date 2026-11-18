@@ -21,105 +21,105 @@ import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
  */
 const STRINGS = dict({
     en: {
-        tuition: 'Systemwide tuition',
+        tuition: 'Tuition',
         fees: 'Campus fees',
-        mandatory: 'Mandatory total',
-        aid: 'Grants (not repaid)',
-        pendingAid: 'Estimated aid, pending verification',
+        mandatory: 'Total per year',
+        aid: 'Grants (you don’t pay these back)',
+        pendingAid: 'Aid waiting on verification',
         pending: 'pending',
-        net: 'What you would pay',
+        net: 'You’ll pay',
         perYear: 'per year',
         holdTitle: 'Your aid is on hold',
         holdBody:
-            'Your application was received, but your award cannot be released until verification is cleared. Until then nobody can tell you your real cost, which is exactly why this is worth doing first.',
-        awarded: 'Award posted',
-        nothingYet: 'Not calculated yet',
-        openPage: 'Open the CSU financial aid page',
+            'We have your aid application, but we can’t release your aid until you finish verification. After that we can tell you what you’ll pay.',
+        awarded: 'Your aid is ready',
+        nothingYet: 'Not known yet',
+        openPage: 'CSU financial aid page',
         startVerification: 'Start my verification',
     },
     es: {
-        tuition: 'Matrícula del sistema',
+        tuition: 'Matrícula',
         fees: 'Cuotas del campus',
-        mandatory: 'Total obligatorio',
+        mandatory: 'Total al año',
         aid: 'Becas (no se devuelven)',
-        pendingAid: 'Ayuda estimada, pendiente de verificación',
+        pendingAid: 'Ayuda que espera la verificación',
         pending: 'pendiente',
-        net: 'Lo que pagarías',
+        net: 'Pagarás',
         perYear: 'al año',
         holdTitle: 'Tu ayuda está retenida',
         holdBody:
-            'Recibimos tu solicitud, pero no se puede liberar tu ayuda hasta completar la verificación. Hasta entonces nadie puede decirte tu costo real, y por eso conviene resolverlo primero.',
-        awarded: 'Ayuda asignada',
-        nothingYet: 'Todavía sin calcular',
-        openPage: 'Abrir la página de ayuda financiera de CSU',
+            'Tenemos tu solicitud de ayuda, pero no podemos liberarla hasta que termines la verificación. Después te diremos cuánto pagarás.',
+        awarded: 'Tu ayuda está lista',
+        nothingYet: 'Aún no se sabe',
+        openPage: 'Página de ayuda financiera de CSU',
         startVerification: 'Empezar mi verificación',
     },
     tl: {
-        tuition: 'Matrikula ng sistema',
+        tuition: 'Tuition',
         fees: 'Bayarin sa campus',
-        mandatory: 'Kabuuang kailangang bayaran',
-        aid: 'Grant (hindi binabayaran)',
-        pendingAid: 'Tinatayang aid, hinihintay ang verification',
+        mandatory: 'Kabuuan bawat taon',
+        aid: 'Grants (hindi babayaran)',
+        pendingAid: 'Aid na naghihintay ng verification',
         pending: 'nakabinbin',
-        net: 'Ang babayaran mo',
+        net: 'Babayaran mo',
         perYear: 'kada taon',
         holdTitle: 'Naka-hold ang tulong pinansyal mo',
         holdBody:
-            "Natanggap ang aplikasyon mo, pero hindi mailalabas ang award hangga't hindi tapos ang verification. Hangga't ganoon, walang makakapagsabi ng totoong gastos mo, kaya ito ang unahin.",
-        awarded: 'Naipost na ang award',
-        nothingYet: 'Hindi pa nakalkula',
-        openPage: 'Buksan ang pahina ng financial aid ng CSU',
+            'Natanggap namin ang aid application mo, pero hindi pa namin mailalabas ang aid mo hangga’t hindi mo natatapos ang verification. Pagkatapos noon, masasabi namin kung magkano ang babayaran mo.',
+        awarded: 'Handa na ang aid mo',
+        nothingYet: 'Hindi pa alam',
+        openPage: 'Financial aid page ng CSU',
         startVerification: 'Simulan ang verification ko',
     },
     vi: {
-        tuition: 'Học phí toàn hệ thống',
-        fees: 'Lệ phí tại trường',
-        mandatory: 'Tổng bắt buộc',
+        tuition: 'Học phí',
+        fees: 'Phí của trường',
+        mandatory: 'Tổng mỗi năm',
         aid: 'Trợ cấp (không phải hoàn trả)',
-        pendingAid: 'Hỗ trợ ước tính, đang chờ xác minh',
+        pendingAid: 'Hỗ trợ đang chờ xác minh',
         pending: 'đang chờ',
-        net: 'Bạn sẽ phải trả',
+        net: 'Bạn sẽ trả',
         perYear: 'mỗi năm',
         holdTitle: 'Hỗ trợ tài chính của bạn đang bị giữ',
         holdBody:
-            'Đơn của bạn đã được nhận, nhưng khoản hỗ trợ chưa thể cấp cho đến khi hoàn tất xác minh. Trước khi đó không ai nói được chi phí thật của bạn, nên làm việc này trước.',
-        awarded: 'Đã cấp hỗ trợ',
-        nothingYet: 'Chưa tính được',
-        openPage: 'Mở trang hỗ trợ tài chính của CSU',
+            'Chúng tôi đã nhận đơn xin hỗ trợ của bạn, nhưng chưa thể giải ngân cho đến khi bạn hoàn tất xác minh. Sau đó chúng tôi sẽ cho bạn biết số tiền phải trả.',
+        awarded: 'Hỗ trợ của bạn đã sẵn sàng',
+        nothingYet: 'Chưa biết',
+        openPage: 'Trang hỗ trợ tài chính của CSU',
         startVerification: 'Bắt đầu xác minh',
     },
     zh: {
-        tuition: '系统学费',
+        tuition: '学费',
         fees: '校区杂费',
-        mandatory: '必缴总额',
+        mandatory: '每年合计',
         aid: '助学金（无需偿还）',
-        pendingAid: '预估助学金，待核实',
+        pendingAid: '等待核实的助学金',
         pending: '待定',
-        net: '你实际需要支付',
+        net: '你需支付',
         perYear: '每年',
         holdTitle: '你的助学金被暂停',
         holdBody:
-            '我们已收到你的申请，但在完成核实之前无法发放。在那之前没有人能告诉你真实费用，所以这件事值得先处理。',
-        awarded: '助学金已发放',
-        nothingYet: '尚未计算',
-        openPage: '打开 CSU 助学金页面',
+            '我们已收到你的助学金申请，但在你完成核实之前无法发放。完成后，我们就能告诉你需要支付多少。',
+        awarded: '你的助学金已到位',
+        nothingYet: '暂时未知',
+        openPage: 'CSU 助学金页面',
         startVerification: '开始核实',
     },
     de: {
-        tuition: 'Systemweite Studiengebühr',
+        tuition: 'Studiengebühren',
         fees: 'Campusgebühren',
-        mandatory: 'Pflichtkosten gesamt',
-        aid: 'Zuschüsse (nicht rückzahlbar)',
-        pendingAid: 'Geschätzte Förderung, Prüfung ausstehend',
+        mandatory: 'Gesamt pro Jahr',
+        aid: 'Zuschüsse (nicht zurückzuzahlen)',
+        pendingAid: 'Förderung wartet auf Prüfung',
         pending: 'ausstehend',
-        net: 'Was du zahlen würdest',
+        net: 'Du zahlst',
         perYear: 'pro Jahr',
         holdTitle: 'Deine Förderung ist angehalten',
         holdBody:
-            'Dein Antrag ist eingegangen, aber die Förderung wird erst nach der Verifizierung ausgezahlt. Bis dahin kann dir niemand deine echten Kosten nennen, deshalb lohnt es sich, das zuerst zu erledigen.',
-        awarded: 'Förderung bewilligt',
-        nothingYet: 'Noch nicht berechnet',
-        openPage: 'CSU-Seite zur Studienfinanzierung öffnen',
+            'Dein Förderantrag liegt uns vor, aber wir können die Förderung erst nach der Prüfung freigeben. Danach sagen wir dir, was du zahlst.',
+        awarded: 'Deine Förderung ist da',
+        nothingYet: 'Noch nicht bekannt',
+        openPage: 'Seite zur Studienförderung der CSU',
         startVerification: 'Verifizierung starten',
     },
 });
@@ -178,7 +178,7 @@ export function AidCard({ tuition, fees, total, grants, status, note, url, actio
     const net = !onHold && Number.isFinite(totalNum) ? Math.max(0, totalNum - grantSum) : null;
 
     return (
-        <div className="flex h-full flex-col rounded-xl border border-[var(--csu-border)] bg-[var(--csu-surface)] p-5 shadow-[var(--csu-elevation)]">
+        <div className="flex max-h-full flex-col overflow-y-auto rounded-xl border border-[var(--csu-border)] bg-[var(--csu-card)] p-5 shadow-[var(--csu-elevation)]">
             {onHold ? (
                 <div className="flex items-start gap-3">
                     <AlertTriangle className="mt-0.5 size-5 shrink-0 text-[#B45309]" aria-hidden />
@@ -194,14 +194,14 @@ export function AidCard({ tuition, fees, total, grants, status, note, url, actio
                 </div>
             )}
 
-            <dl className="mt-4 space-y-2 border-t border-[var(--csu-border)] pt-3">
+            <dl className="mt-4 space-y-2 rounded-lg border border-[var(--csu-border)] bg-white px-3 py-2.5">
                 {money(tuition) && <Row label={t.tuition} value={money(tuition)!} />}
                 {money(fees) && <Row label={t.fees} value={money(fees)!} />}
-                {money(total) && <Row label={`${t.mandatory} (${t.perYear})`} value={money(total)!} strong />}
+                {money(total) && <Row label={t.mandatory} value={money(total)!} strong />}
             </dl>
 
             {grantRows.length > 0 && (
-                <dl className="mt-3 space-y-2 border-t border-[var(--csu-border)] pt-3">
+                <dl className="mt-2 space-y-2 rounded-lg border border-[var(--csu-border)] bg-white px-3 py-2.5">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--csu-ink-muted)]">
                         {onHold ? t.pendingAid : t.aid}
                     </p>
@@ -216,7 +216,7 @@ export function AidCard({ tuition, fees, total, grants, status, note, url, actio
                 </dl>
             )}
 
-            <dl className="mt-3 border-t-2 border-[var(--csu-ink)] pt-3">
+            <dl className="mt-2 rounded-lg border border-[var(--csu-border)] bg-white px-3 py-2.5">
                 <Row label={t.net} value={net === null ? t.nothingYet : `${money(net)} ${t.perYear}`} strong={net !== null} muted={net === null} />
             </dl>
 

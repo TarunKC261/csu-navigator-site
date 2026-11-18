@@ -424,9 +424,9 @@ async function postWithManifest(
 }
 
 const GREETING_TAIL_PERSONA =
-  "from the CSU Student Engagement Platform. Two things could hold up your start at Fullerton, and both are fixable today. Want to start with your financial aid?";
+  "from the Student Engagement Platform. Two things could hold up your start at Fullerton, and you can fix both today. Shall we start with your financial aid?";
 const GREETING_TAIL_GENERAL =
-  "from the CSU Student Engagement Platform. I can help with financial aid, orientation, your classes and campus life. What would you like to start with?";
+  "from the Student Engagement Platform. I can help with financial aid, orientation, classes and campus life. Where would you like to start?";
 function greetingTail(): string {
   try {
     return config.greetingName() ? GREETING_TAIL_PERSONA : GREETING_TAIL_GENERAL;
@@ -485,8 +485,8 @@ let _greetingKind: 'door' | 'welcome' | null = null;
 export function buildDoorLine(): string {
   const last4 = getStudent().phoneLast4.split('').join(' ');
   return (
-    "Hi, and welcome to the C-S-U Student Engagement Platform. Before I open your record, I just need to check it's really you. " +
-    `I've sent a six-digit code to the phone ending in ${last4}. Type it in, or read it out to me.`
+    "Hi, and welcome to the Student Engagement Platform. Before I open your record, I need to check it's you. " +
+    `I've texted a six-digit code to your phone ending in ${last4}. Type it in, or read it to me.`
   );
 }
 

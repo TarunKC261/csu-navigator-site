@@ -3,14 +3,12 @@
 import { useState } from 'react';
 import {
   Check,
-  Mic,
   FileText,
   CalendarDays,
   Users,
   BookOpen,
   ListChecks,
   ChevronDown,
-  Sparkles,
 } from '@/lib/icons';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
@@ -18,7 +16,7 @@ import { dict } from '@/lib/i18n/dict';
 
 // Icons + per-step number stay here; the words come from STRINGS so the home
 // follows the EN/DE toggle (owner 2026-10-16).
-const HIGHLIGHT_ICONS = [Mic, FileText, CalendarDays, Users];
+const HIGHLIGHT_ICONS = [FileText, CalendarDays, BookOpen, Users];
 const STEP_NUMS = ['01', '02', '03'];
 
 /**
@@ -37,26 +35,26 @@ const QUICK_ACTIONS: Array<{ Icon: typeof FileText; phrase: string }> = [
 // Fixed UI chrome. The CSU build is English-only (the de entry mirrors en so a
 // stray locale preference never shows Henkel text).
 const STRINGS_EN = {
-  eyebrow: 'Home · Admitted Student Support',
-  heroA: "Admitted? Let's get you", heroB: 'to day one.',
-  lede1: 'Personal guidance for ', ledeAcc1: 'admitted CSU students',
-  lede2: ', by voice or chat. Ask about financial aid, orientation, classes or campus life, and Val shows ',
-  ledeAcc2: 'your next step', lede3: ', with the forms, dates and people to help.',
+  eyebrow: 'Admitted students',
+  heroA: 'You’re in.', heroB: 'Let’s get you ready for fall.',
+  lede1: 'Ask Val about ', ledeAcc1: 'financial aid, orientation or classes',
+  lede2: '. Talk or type, and she will show you ',
+  ledeAcc2: 'what to do next', lede3: '.',
   steps: [
-    { title: 'Ask', caption: 'Speak or type your question' },
-    { title: 'See your next step', caption: 'Your checklist, costs and dates on screen' },
-    { title: 'Get it done', caption: 'Forms ready to submit, a person when you need one' },
-  ],
+      { title: 'Ask', caption: 'Talk or type' },
+      { title: 'See what’s next', caption: 'Your to-do list, costs and dates' },
+      { title: 'Get it done', caption: 'Fill in forms, or talk to a person' },
+    ],
   instantResolution: 'One clear next step at a time, so nothing holds up your first day',
-  console: 'Your student journey',
+  console: 'Getting started at CSU',
   consoleTag: 'CSU · Fall 2027',
-  highlights: ['Voice or chat, phone friendly', 'Financial aid and verification', 'Orientation and registration', 'Campus life and career pathways'],
+  highlights: ['Financial aid', 'Orientation', 'Classes and registration', 'Campus life'],
   quickActions: ['Fix my financial aid', 'Book orientation', 'My classes', "What's left?"],
   quickActionsLabel: 'Quick actions',
-  reviewBadge: 'REVIEW BEFORE SUBMITTING',
+  reviewBadge: 'CHECK BEFORE YOU SEND',
   working: "One moment, I'm getting that for you.",
-  readyHint: 'Ready — just start talking, or pick a quick action',
-  connectingHint: 'Connecting Val…',
+  readyHint: 'Val is ready. Start talking or pick one.',
+  connectingHint: 'Connecting to Val…',
   voiceCapabilities: 'What I can help with',
   capabilities: ['Explain a financial aid hold', 'Prepare your verification form', 'Pick an orientation date', 'Plan a 15-unit schedule', 'Show costs and pending aid', 'Compare CSU campuses', 'Map your major to a career', 'Connect you with a person'],
 };
@@ -67,92 +65,92 @@ const STRINGS_EN = {
 const STRINGS = dict({
   en: STRINGS_EN,
   es: {
-    eyebrow: 'Inicio · Apoyo para estudiantes admitidos',
-    heroA: '¿Te admitieron? Te ayudamos a llegar', heroB: 'al primer día.',
-    lede1: 'Orientación personal para ', ledeAcc1: 'estudiantes admitidos en CSU',
-    lede2: ', por voz o por chat. Pregunta sobre ayuda financiera, orientación, clases o vida en el campus, y Val te muestra ',
-    ledeAcc2: 'tu siguiente paso', lede3: ', con los formularios, fechas y personas que te pueden ayudar.',
+    eyebrow: 'Estudiantes admitidos',
+    heroA: 'Ya te admitieron.', heroB: 'Vamos a prepararte para el otoño.',
+    lede1: 'Pregúntale a Val sobre ', ledeAcc1: 'ayuda financiera, orientación o clases',
+    lede2: '. Habla o escribe, y ella te mostrará ',
+    ledeAcc2: 'qué hacer después', lede3: '.',
     steps: [
-      { title: 'Pregunta', caption: 'Habla o escribe tu pregunta' },
-      { title: 'Ve tu siguiente paso', caption: 'Tu lista, costos y fechas en pantalla' },
-      { title: 'Hazlo', caption: 'Formularios listos para enviar y una persona cuando la necesites' },
+      { title: 'Pregunta', caption: 'Habla o escribe' },
+      { title: 'Mira lo que sigue', caption: 'Tus pendientes, costos y fechas' },
+      { title: 'Hazlo', caption: 'Llena formularios o habla con una persona' },
     ],
     instantResolution: 'Un paso claro a la vez, para que nada retrase tu primer día',
-    console: 'Tu camino como estudiante',
-    highlights: ['Voz o chat, ideal para el celular', 'Ayuda financiera y verificación', 'Orientación e inscripción', 'Vida en el campus y carreras'],
+    console: 'Primeros pasos en CSU',
+    highlights: ['Ayuda financiera', 'Orientación', 'Clases e inscripción', 'Vida en el campus'],
     quickActions: ['Arreglar mi ayuda financiera', 'Reservar orientación', 'Mis clases', '¿Qué me falta?'],
     quickActionsLabel: 'Acciones rápidas',
     reviewBadge: 'REVISA ANTES DE ENVIAR',
     working: 'Un momento, ya lo busco.',
-    readyHint: 'Listo: empieza a hablar o elige una acción rápida',
+    readyHint: 'Val está lista. Empieza a hablar o elige una opción.',
     connectingHint: 'Conectando con Val…',
     voiceCapabilities: 'En qué te puedo ayudar',
     capabilities: ['Explicar una retención de ayuda financiera', 'Preparar tu formulario de verificación', 'Elegir una fecha de orientación', 'Planear un horario de 15 unidades', 'Mostrar costos y ayuda pendiente', 'Comparar campus de CSU', 'Relacionar tu carrera con un empleo', 'Conectarte con una persona'],
   },
   zh: {
-    eyebrow: '首页 · 录取学生支持',
-    heroA: '已被录取？我们陪你走到', heroB: '开学第一天。',
-    lede1: '为', ledeAcc1: 'CSU 录取学生', lede2: '提供个人指导，语音或聊天都可以。询问助学金、新生指导、课程或校园生活，Val 会为你展示',
-    ledeAcc2: '下一步', lede3: '，以及相关表格、日期和可以帮你的人。',
+    eyebrow: '已录取学生',
+    heroA: '你已被录取。', heroB: '我们来为秋季开学做准备。',
+    lede1: '可以问 Val 关于', ledeAcc1: '助学金、新生指导或课程', lede2: '的问题。说或打字都行，她会告诉你',
+    ledeAcc2: '下一步做什么', lede3: '。',
     steps: [
-      { title: '提问', caption: '说出或输入你的问题' },
-      { title: '查看下一步', caption: '清单、费用和日期都显示在屏幕上' },
-      { title: '完成它', caption: '表格已准备好提交，需要时有人帮你' },
+      { title: '提问', caption: '说或打字' },
+      { title: '看看下一步', caption: '待办事项、费用和日期' },
+      { title: '完成', caption: '填写表格，或找人帮忙' },
     ],
     instantResolution: '一次一个清楚的步骤，让开学第一天不被耽误',
-    console: '你的学生旅程',
-    highlights: ['语音或聊天，适合手机', '助学金与核实', '新生指导与选课注册', '校园生活与职业路径'],
+    console: '在 CSU 起步',
+    highlights: ['助学金', '新生指导', '课程与注册', '校园生活'],
     quickActions: ['解决我的助学金问题', '预约新生指导', '我的课程', '还剩什么？'],
     quickActionsLabel: '快捷操作',
-    reviewBadge: '提交前请检查',
+    reviewBadge: '发送前请检查',
     working: '请稍等，我马上为你处理。',
-    readyHint: '准备好了：直接开口说，或选择一个快捷操作',
+    readyHint: 'Val 已就绪。直接说话或选一项。',
     connectingHint: '正在连接 Val…',
     voiceCapabilities: '我可以帮你做什么',
     capabilities: ['解释助学金暂停', '准备你的核实表格', '选择新生指导日期', '规划 15 学分课表', '显示费用和待定助学金', '比较 CSU 各校区', '把专业和职业联系起来', '帮你联系真人'],
   },
   tl: {
-    eyebrow: 'Home · Suporta para sa mga Na-admit na Estudyante',
-    heroA: 'Na-admit ka na? Tutulungan ka naming makarating', heroB: 'sa unang araw.',
-    lede1: 'Personal na gabay para sa ', ledeAcc1: 'mga na-admit na estudyante ng CSU',
-    lede2: ', sa boses o chat. Magtanong tungkol sa financial aid, orientation, klase o buhay sa campus, at ipapakita ni Val ',
-    ledeAcc2: 'ang susunod mong hakbang', lede3: ', kasama ang mga form, petsa at taong makakatulong.',
+    eyebrow: 'Mga na-admit na estudyante',
+    heroA: 'Tanggap ka na.', heroB: 'Ihanda na natin ang fall mo.',
+    lede1: 'Tanungin si Val tungkol sa ', ledeAcc1: 'financial aid, orientation o klase',
+    lede2: '. Magsalita o mag-type, at ipapakita niya ',
+    ledeAcc2: 'ang susunod mong gagawin', lede3: '.',
     steps: [
-      { title: 'Magtanong', caption: 'Sabihin o i-type ang tanong mo' },
-      { title: 'Tingnan ang susunod na hakbang', caption: 'Ang checklist, gastos at petsa mo sa screen' },
-      { title: 'Tapusin ito', caption: 'Handa nang i-submit ang mga form, at may tao kapag kailangan mo' },
+      { title: 'Magtanong', caption: 'Magsalita o mag-type' },
+      { title: 'Tingnan ang susunod', caption: 'Listahan ng gagawin, gastos at petsa' },
+      { title: 'Tapusin', caption: 'Punan ang form, o kumausap ng tao' },
     ],
     instantResolution: 'Isang malinaw na hakbang sa bawat pagkakataon, para walang makaantala sa unang araw mo',
-    console: 'Ang student journey mo',
-    highlights: ['Boses o chat, swak sa phone', 'Financial aid at verification', 'Orientation at registration', 'Buhay sa campus at career paths'],
+    console: 'Pagsisimula sa CSU',
+    highlights: ['Financial aid', 'Orientation', 'Klase at registration', 'Buhay sa campus'],
     quickActions: ['Ayusin ang financial aid ko', 'Mag-book ng orientation', 'Mga klase ko', 'Ano pa ang kulang?'],
     quickActionsLabel: 'Mabilis na aksyon',
-    reviewBadge: 'SURIIN BAGO I-SUBMIT',
+    reviewBadge: 'TINGNAN BAGO IPADALA',
     working: 'Sandali lang, kinukuha ko na.',
-    readyHint: 'Handa na: magsalita lang, o pumili ng mabilis na aksyon',
+    readyHint: 'Handa na si Val. Magsalita o pumili ng isa.',
     connectingHint: 'Kumokonekta kay Val…',
     voiceCapabilities: 'Ano ang matutulong ko',
     capabilities: ['Ipaliwanag ang hold sa financial aid', 'Ihanda ang verification form mo', 'Pumili ng petsa ng orientation', 'Magplano ng 15-unit na schedule', 'Ipakita ang gastos at nakabinbing aid', 'Ihambing ang mga campus ng CSU', 'Iugnay ang major mo sa career', 'Ikonekta ka sa isang tao'],
   },
   vi: {
-    eyebrow: 'Trang chủ · Hỗ trợ sinh viên trúng tuyển',
-    heroA: 'Đã trúng tuyển? Cùng bạn đến', heroB: 'ngày đầu tiên.',
-    lede1: 'Hướng dẫn cá nhân cho ', ledeAcc1: 'sinh viên trúng tuyển CSU',
-    lede2: ', bằng giọng nói hoặc trò chuyện. Hỏi về hỗ trợ tài chính, định hướng, lớp học hay đời sống ở trường, và Val sẽ cho bạn thấy ',
-    ledeAcc2: 'bước tiếp theo', lede3: ', cùng các biểu mẫu, ngày tháng và người có thể giúp bạn.',
+    eyebrow: 'Sinh viên trúng tuyển',
+    heroA: 'Bạn đã trúng tuyển.', heroB: 'Cùng chuẩn bị cho học kỳ mùa thu.',
+    lede1: 'Hỏi Val về ', ledeAcc1: 'hỗ trợ tài chính, định hướng hoặc lớp học',
+    lede2: '. Nói hoặc gõ, Val sẽ chỉ cho bạn ',
+    ledeAcc2: 'việc cần làm tiếp theo', lede3: '.',
     steps: [
-      { title: 'Hỏi', caption: 'Nói hoặc gõ câu hỏi của bạn' },
-      { title: 'Xem bước tiếp theo', caption: 'Danh sách việc, chi phí và ngày tháng trên màn hình' },
-      { title: 'Hoàn thành', caption: 'Biểu mẫu sẵn sàng để nộp, có người hỗ trợ khi bạn cần' },
+      { title: 'Hỏi', caption: 'Nói hoặc gõ' },
+      { title: 'Xem việc tiếp theo', caption: 'Việc cần làm, chi phí và ngày tháng' },
+      { title: 'Hoàn thành', caption: 'Điền biểu mẫu, hoặc nói chuyện với nhân viên' },
     ],
     instantResolution: 'Mỗi lần một bước rõ ràng, để không gì cản trở ngày đầu tiên của bạn',
-    console: 'Hành trình sinh viên của bạn',
-    highlights: ['Giọng nói hoặc trò chuyện, tiện trên điện thoại', 'Hỗ trợ tài chính và xác minh', 'Định hướng và đăng ký lớp', 'Đời sống ở trường và lộ trình nghề nghiệp'],
+    console: 'Bắt đầu tại CSU',
+    highlights: ['Hỗ trợ tài chính', 'Định hướng', 'Lớp học và đăng ký', 'Đời sống ở trường'],
     quickActions: ['Giải quyết hỗ trợ tài chính', 'Đặt buổi định hướng', 'Lớp học của tôi', 'Còn lại gì?'],
     quickActionsLabel: 'Thao tác nhanh',
-    reviewBadge: 'XEM LẠI TRƯỚC KHI NỘP',
+    reviewBadge: 'KIỂM TRA TRƯỚC KHI GỬI',
     working: 'Chờ một chút, mình lấy ngay cho bạn.',
-    readyHint: 'Sẵn sàng: cứ bắt đầu nói, hoặc chọn một thao tác nhanh',
+    readyHint: 'Val đã sẵn sàng. Hãy nói hoặc chọn một mục.',
     connectingHint: 'Đang kết nối với Val…',
     voiceCapabilities: 'Mình có thể giúp gì',
     capabilities: ['Giải thích việc tạm giữ hỗ trợ tài chính', 'Chuẩn bị biểu mẫu xác minh', 'Chọn ngày định hướng', 'Lên lịch học 15 tín chỉ', 'Hiển thị chi phí và hỗ trợ đang chờ', 'So sánh các cơ sở CSU', 'Kết nối ngành học với nghề nghiệp', 'Kết nối bạn với một người thật'],
@@ -161,7 +159,7 @@ const STRINGS = dict({
 
 /** CSU-red emphasis inside the lede. Not interactive. */
 function Accent({ children }: { children: React.ReactNode }) {
-  return <span style={{ color: '#C91235' }}>{children}</span>;
+  return <span style={{ color: '#CF102D' }}>{children}</span>;
 }
 
 /**
@@ -256,7 +254,7 @@ export function WelcomeLanding() {
 
           {/* How it works — informational, no click targets */}
           <div
-            className="dx-card animate-slide-in-left grid w-full grid-cols-1 gap-0 overflow-hidden rounded-md border border-[#E5E7EB] sm:grid-cols-3"
+            className="dx-card animate-slide-in-left grid w-full grid-cols-1 gap-0 overflow-hidden rounded-md border border-[#DDDDDD] bg-white sm:grid-cols-3"
             style={{ animationDelay: '0.32s' }}
           >
             {t.steps.map(({ title, caption }, i) => (
@@ -284,7 +282,7 @@ export function WelcomeLanding() {
 
           {/* Console card */}
           <div
-            className="dx-card animate-slide-in-left w-full rounded-md border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.04)]"
+            className="dx-card animate-slide-in-left w-full rounded-md border border-[#DDDDDD] bg-[var(--csu-card)] p-4"
             style={{ animationDelay: '0.4s' }}
           >
             <div className="flex items-center justify-between">
@@ -301,22 +299,12 @@ export function WelcomeLanding() {
               {HIGHLIGHT_ICONS.map((Icon, i) => (
                 <span
                   key={t.highlights[i]}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-[#F5F7FA] px-2.5 py-1 font-voice text-[12px] text-[#1A1A1A]/80"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#DDDDDD] bg-white px-2.5 py-1 font-voice text-[12px] text-[#1A1A1A]/80"
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0 text-[#1A1A1A]/60" strokeWidth={1.75} />
                   {t.highlights[i]}
                 </span>
               ))}
-            </div>
-
-            {/* The one capability worth calling out — deflection before filing.
-                Same red tint the PoC banner uses. Static, not a button. */}
-            <div
-              className="mt-1.5 flex items-center gap-2 rounded-md border px-2.5 py-1.5 font-voice text-[12px] font-medium"
-              style={{ borderColor: '#C91235', background: '#FAE7EB', color: '#A00E2A' }}
-            >
-              <Sparkles className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-              {t.instantResolution}
             </div>
 
             <div className="my-2.5 border-t border-[#E5E7EB]" />
@@ -349,8 +337,8 @@ export function WelcomeLanding() {
                     }}
                     className={`group inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 font-voice text-[13px] font-semibold shadow-sm transition hover:-translate-y-[1px] hover:shadow ${
                       primary
-                        ? 'border border-[#C91235] bg-[#C91235] text-white hover:bg-[#A00E2A]'
-                        : 'border border-[#E5E7EB] bg-white text-[#1A1A1A] hover:border-[#C91235]/40'
+                        ? 'border border-[#CF102D] bg-[#CF102D] text-white hover:bg-[#A50D24]'
+                        : 'border border-[#E5E7EB] bg-white text-[#1A1A1A] hover:border-[#CF102D]/40'
                     }`}
                   >
                     <Icon
@@ -376,7 +364,7 @@ export function WelcomeLanding() {
                   <span
                     className="inline-block h-2 w-2 shrink-0 rounded-full"
                     style={{
-                      background: sessionState === 'connected' ? '#16A34A' : '#C91235',
+                      background: sessionState === 'connected' ? '#16A34A' : '#CF102D',
                     }}
                   />
                   {sessionState === 'connected' ? t.readyHint : t.connectingHint}

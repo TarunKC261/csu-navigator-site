@@ -25,7 +25,7 @@ const STRINGS = dict({
         overdue: 'Overdue',
         inProgress: 'In progress',
         due: (when: string) => `Due ${when}`,
-        tapHint: 'Tap a step to work on it',
+        tapHint: 'Tap a step to start it',
     },
     es: {
         title: (name?: string) => (name ? `Los próximos pasos de ${name}` : 'Tus próximos pasos'),
@@ -130,7 +130,7 @@ export function JourneyCard({ studentName, campus, term, steps, daysToStart }: J
     const days = typeof daysToStart === 'string' ? parseInt(daysToStart, 10) : daysToStart;
 
     return (
-        <div className="flex h-full flex-col rounded-xl border border-[var(--csu-border)] bg-[var(--csu-surface)] p-5 shadow-[var(--csu-elevation)]">
+        <div className="flex max-h-full flex-col overflow-y-auto rounded-xl border border-[var(--csu-border)] bg-[var(--csu-card)] p-5 shadow-[var(--csu-elevation)]">
             <header className="mb-4">
                 <div className="flex items-baseline justify-between gap-3">
                     <h3 className="font-voice text-lg font-semibold text-[var(--csu-ink)]">{t.title(studentName)}</h3>
@@ -143,7 +143,7 @@ export function JourneyCard({ studentName, campus, term, steps, daysToStart }: J
                 )}
 
                 <div
-                    className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[var(--csu-border)]"
+                    className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white"
                     role="progressbar"
                     aria-valuenow={pct}
                     aria-valuemin={0}
@@ -213,10 +213,10 @@ export function JourneyCard({ studentName, campus, term, steps, daysToStart }: J
                     );
 
                     const rowClass = [
-                        'flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
-                        isNext ? 'bg-[var(--csu-gold-soft)]' : '',
+                        'flex w-full items-start gap-2.5 rounded-lg border bg-white px-2.5 py-2 text-left transition-colors',
+                        isNext ? 'border-[var(--csu-accent)]' : 'border-[var(--csu-border)]',
                         isDone ? 'opacity-55' : '',
-                        tappable ? 'cursor-pointer hover:bg-[var(--csu-surface-alt)]' : '',
+                        tappable ? 'cursor-pointer hover:bg-[#F7F7F7]' : '',
                     ].join(' ');
 
                     return (
