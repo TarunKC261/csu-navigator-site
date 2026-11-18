@@ -256,7 +256,7 @@ body {
      move at all. 40vw stays as the guard for narrow viewports, where
      the content column needs protecting; it simply no longer binds first on
      an ordinary laptop. The clamp still caps her at 40rem. */
-  --avatar-col-w: calc(clamp(14rem, min(40vw, calc(0.772 * (100dvh - 116px))), 40rem) + 2rem);
+  --avatar-col-w: calc(clamp(14rem, min(calc(0.40 * var(--ui-w)), calc(0.772 * (var(--ui-h) - 116px))), 40rem) + 2rem);
 
   /* Room plate scale. `background-size: auto var(--room-h)` is height-driven.
      Note the direction of this control: at 100% the plate's FULL vertical extent
@@ -405,6 +405,42 @@ body {
   --avatar-bleed-left: 128px;
 }
 
+/* ── UI SCALE: one design size, every window ─────────────────────────────────
+   Measured 19 Nov on the same page, two machines, both dpr 1.5:
+
+     1224x623 window -> row 567, content 469  (83% of the row: looks right)
+     1706x968 window -> row 861, content 454  (53% of the row: stranded)
+
+   The content is the SAME height on both. Nothing in this layout responds to
+   viewport height, and WelcomeLanding says so itself: "the spacing below is
+   tuned to fit ~860px+". Reflow cannot close a 400px gap, because the card's
+   rows are fixed heights; a narrower column buys tens of pixels, not hundreds.
+
+   So the shell is scaled instead, in steps, so it always lays out at roughly
+   the height it was designed for. zoom (not transform) because zoom affects
+   LAYOUT: the column widths, the wrapping and the avatar column all follow,
+   which is the point. Everything below reads --ui-w / --ui-h rather than
+   100vw / 100dvh, because inside a zoomed subtree those still resolve against
+   the real viewport and would be too big by exactly the zoom factor.
+
+   The first step starts at 760px, above the 623px machine this was tuned on,
+   so that machine does not move at all. The media queries use the real
+   viewport, so a phone (always under 760) is never scaled. */
+:root {
+  --ui-zoom: 1;
+  --ui-w: 100vw;
+  --ui-h: 100dvh;
+}
+@media (min-height: 760px) {
+  :root { --ui-zoom: 1.2; --ui-w: calc(100vw / 1.2); --ui-h: calc(100dvh / 1.2); }
+}
+@media (min-height: 870px) {
+  :root { --ui-zoom: 1.4; --ui-w: calc(100vw / 1.4); --ui-h: calc(100dvh / 1.4); }
+}
+@media (min-height: 1010px) {
+  :root { --ui-zoom: 1.55; --ui-w: calc(100vw / 1.55); --ui-h: calc(100dvh / 1.55); }
+}
+
 /* ── The shell ──
    `overflow-x: clip` is load-bearing, not tidiness: --avatar-shift-x pushes the
    avatar layers past the right edge on purpose, and without it that becomes a
@@ -417,8 +453,9 @@ body {
      back), and the banner `auto` went when the PoC warning was folded into the
      header row (another 28px back). Both went to the content row. */
   grid-template-rows: auto minmax(0, 1fr);
-  height: 100dvh;
-  width: 100%;
+  zoom: var(--ui-zoom);
+  height: var(--ui-h);
+  width: var(--ui-w);
 
   /* `overflow: clip` on BOTH axes, and this is the fix for the page scrollbar.
      It was `overflow-x: clip` alone, which looks harmless and is not: per the
@@ -525,6 +562,7 @@ body {
    `max-width` keeps it on-screen on a narrow viewport where the column is
    dropped. Sits above the engaged line, which owns the very bottom. */
 .lifecycle-countdown {
+  zoom: var(--ui-zoom);
   position: fixed;
   right: 0;
   /* 2026-09-21: 4.25rem -> 5.75rem. The DEPENDENT change I missed: the engaged
