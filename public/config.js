@@ -29,9 +29,10 @@ window.__DX_CONFIG__ = {
   // '' = greet the signed-in user by first name instead.
   GREETING_NAME: 'Maria',
 
-  // Official CSU logo file once received from CSU Marketing Communications,
-  // e.g. '/brand/csu-wordmark.svg' (put the file in public/brand/). '' = text label.
-  BRAND_LOGO_URL: '',
+  // Logo, top left. The red CSU block from the logo on calstate.edu (owner
+  // 2026-11-18). Swap for the file from CSU Marketing Communications if one is
+  // supplied. '' = plain text label.
+  BRAND_LOGO_URL: '/brand/csu-mark.png',
 
   // Student verification door, shown after sign-in and before Maria's record
   // opens. 'mock' = a six-digit code is made in the browser and shown on screen

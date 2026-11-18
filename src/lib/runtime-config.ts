@@ -119,7 +119,7 @@ export const config = {
     // greeting matches the student in the prompt; '' = the signed-in first name.
     greetingName: () => resolve('GREETING_NAME', undefined, ''),
     // CSU: official logo file (e.g. '/brand/csu-wordmark.svg'). '' = text label.
-    brandLogoUrl: () => resolve('BRAND_LOGO_URL', undefined, ''),
+    brandLogoUrl: () => resolve('BRAND_LOGO_URL', undefined, '/brand/csu-mark.png'),
     // CSU: username + password sign-in for people without SSO. Only a salted
     // PBKDF2 hash is ever configured (see lib/auth/password-login.ts).
     passwordLoginEnabled: () => resolve('PASSWORD_LOGIN_ENABLED', undefined, 'false').toLowerCase() === 'true',

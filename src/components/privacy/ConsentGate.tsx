@@ -191,9 +191,9 @@ export function ConsentGate({ children }: { children: React.ReactNode }) {
             preamble={
                 <div className="mb-5">
                     <p className="font-voice text-[13px] leading-relaxed" style={{ color: '#1A1A1A' }}>
-                        <strong>The CSU Student Engagement Platform is a voice assistant.</strong> It needs your microphone to
-                        hear you and your speakers to reply. Your browser will ask for permission
-                        next. Without the microphone the assistant cannot start.
+                        <strong>Val is a voice assistant.</strong> She needs your microphone to hear you and your
+                        speakers to answer. Your browser will ask for permission next. Without the microphone she
+                        can&rsquo;t start.
                     </p>
                     {blocked && (
                         <div

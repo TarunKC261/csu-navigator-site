@@ -9,12 +9,12 @@ import { logEvent } from '@/lib/sessionLog';
 
 // Header chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 const HEADER_STRINGS = dict({
-  en: { goHome: 'Go to home page', title: 'CSU Student Engagement Platform', bannerLead: 'Demo.', bannerTail: 'All student data is sample data.', bannerShort: 'Sample data only.', privacyFull: 'Data Privacy Notice', privacyShort: 'Privacy' },
-  de: { goHome: 'Zur Startseite', title: 'CSU Student Engagement Platform', bannerLead: 'Proof of Concept.', bannerTail: 'Nur Test- oder anonymisierte Daten verwenden.', bannerShort: 'Nur Testdaten verwenden.', privacyFull: 'Datenschutzhinweis', privacyShort: 'Datenschutz' },
-  es: { goHome: 'Ir a la página de inicio', bannerLead: 'Demostración.', bannerTail: 'Todos los datos de estudiantes son de ejemplo.', bannerShort: 'Solo datos de ejemplo.', privacyFull: 'Aviso de privacidad de datos', privacyShort: 'Privacidad' },
-  zh: { goHome: '返回首页', bannerLead: '演示。', bannerTail: '所有学生数据均为示例数据。', bannerShort: '仅为示例数据。', privacyFull: '数据隐私声明', privacyShort: '隐私' },
-  tl: { goHome: 'Pumunta sa home page', bannerLead: 'Demo.', bannerTail: 'Halimbawang datos lang ang lahat ng datos ng estudyante.', bannerShort: 'Halimbawang datos lang.', privacyFull: 'Abiso sa Privacy ng Datos', privacyShort: 'Privacy' },
-  vi: { goHome: 'Về trang chủ', bannerLead: 'Bản demo.', bannerTail: 'Mọi dữ liệu sinh viên đều là dữ liệu mẫu.', bannerShort: 'Chỉ dữ liệu mẫu.', privacyFull: 'Thông báo quyền riêng tư dữ liệu', privacyShort: 'Quyền riêng tư' },
+  en: { goHome: 'Go to home page', title: 'Student Engagement Platform', demoTag: 'CSU demo', sample: 'Sample data', privacyFull: 'Privacy notice', privacyShort: 'Privacy' },
+  de: { goHome: 'Zur Startseite', title: 'Student Engagement Platform', demoTag: 'CSU-Demo', sample: 'Beispieldaten', privacyFull: 'Datenschutzhinweis', privacyShort: 'Datenschutz' },
+  es: { goHome: 'Ir al inicio', demoTag: 'Demo de CSU', sample: 'Datos de ejemplo', privacyFull: 'Aviso de privacidad', privacyShort: 'Privacidad' },
+  zh: { goHome: '返回首页', demoTag: 'CSU 演示', sample: '示例数据', privacyFull: '隐私声明', privacyShort: '隐私' },
+  tl: { goHome: 'Bumalik sa home', demoTag: 'CSU demo', sample: 'Halimbawang datos', privacyFull: 'Abiso sa privacy', privacyShort: 'Privacy' },
+  vi: { goHome: 'Về trang chủ', demoTag: 'Bản demo CSU', sample: 'Dữ liệu mẫu', privacyFull: 'Thông báo quyền riêng tư', privacyShort: 'Quyền riêng tư' },
 });
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { AccountMenu } from '@/components/voice/AccountMenu';
@@ -75,10 +75,11 @@ export function AppHeader() {
 
   return (
     <header
-      className="relative z-50 flex w-full items-center gap-3 border-b border-[#E5E7EB] bg-white pl-2 pr-4 md:gap-4 md:pr-6"
+      className="relative z-50 flex w-full items-center gap-3 pl-2 pr-4 text-white md:gap-4 md:pr-6"
       style={{
         height: 'var(--app-header-h)',
-        boxShadow: '0 1px 0 rgba(0,0,0,0.04), 0 1px 8px rgba(0,0,0,0.03)',
+        background: 'var(--henkel-red)',
+        boxShadow: '0 1px 8px rgba(0,0,0,0.10)',
       }}
     >
       {/* Brand: logo hard against the corner, then the single product title */}
@@ -89,19 +90,23 @@ export function AppHeader() {
           goHome();
         }}
         aria-label={t.goHome}
-        className="shrink-0 rounded-sm outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#C91235]/40"
+        className="shrink-0 rounded-sm outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-white/60"
       >
         <span className="block pl-2">
           <BrandMark size="sm" />
         </span>
       </Link>
 
-      <span className="hidden h-7 w-px shrink-0 bg-[#E5E7EB] lg:block" />
+      <span className="hidden h-7 w-px shrink-0 bg-white/40 lg:block" />
       <span
         data-app-title
-        className="hidden shrink-0 font-voice text-sm font-semibold text-[#1A1A1A] lg:inline"
+        className="hidden shrink-0 font-voice text-sm font-semibold text-white lg:inline"
       >
         {t.title}
+      </span>
+      {/* We present this as the SEP product shown in a CSU demo, so the tag stays at every width. */}
+      <span className="shrink-0 whitespace-nowrap rounded-full border border-white/75 px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+        {t.demoTag}
       </span>
 
       {/* PoC compliance warning.
@@ -113,19 +118,16 @@ export function AppHeader() {
           `min-w-0` plus `truncate` is still what lets it shrink rather than
           shove the copyright off the row on a narrow viewport. */}
       <div
-        className="ml-auto flex min-w-0 items-center gap-2 rounded-md px-2.5 py-1"
-        style={{ background: '#FAE7EB', border: '1px solid #F7C5CA' }}
+        className="ml-auto flex min-w-0 items-center gap-2 rounded-full border border-white/75 px-3 py-1"
       >
-        <p className="min-w-0 truncate font-data text-[11px] leading-none" style={{ color: '#A00E2A' }}>
-          <span className="font-semibold">{t.bannerLead}</span>{' '}
-          <span className="hidden md:inline">{t.bannerTail}</span>
-          <span className="md:hidden">{t.bannerShort}</span>
+        <p className="min-w-0 truncate font-data text-[11px] font-semibold leading-none text-white">
+          {t.sample}
         </p>
+        <span aria-hidden className="text-white/70">·</span>
         <button
           type="button"
           onClick={openReview}
-          className="shrink-0 whitespace-nowrap font-data text-[10px] uppercase tracking-[0.12em] underline transition hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C91235]/40"
-          style={{ color: '#A00E2A' }}
+          className="shrink-0 whitespace-nowrap font-data text-[11px] text-white underline transition hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
           <span className="hidden md:inline">{t.privacyFull}</span>
           <span className="md:hidden">{t.privacyShort}</span>
@@ -139,12 +141,12 @@ export function AppHeader() {
           still truncates before this is pushed off. */}
       {/* Version stamp — short in the bar, full build time on hover (owner 2026-10-19). */}
       <span
-        className="hidden shrink-0 whitespace-nowrap font-data text-[10px] tracking-[0.08em] text-[#9CA3AF] md:inline"
+        className="hidden shrink-0 whitespace-nowrap font-data text-[10px] tracking-[0.08em] text-white/80 md:inline"
         title={VERSION_LABEL}
       >
         v{APP_VERSION}
       </span>
-      <span className="hidden shrink-0 whitespace-nowrap font-data text-[10px] uppercase tracking-[0.15em] text-[#5A5A5A] md:inline">
+      <span className="hidden shrink-0 whitespace-nowrap font-data text-[10px] uppercase tracking-[0.15em] text-white/80 md:inline">
         &copy; Unisys 2026 · Demo
       </span>
 

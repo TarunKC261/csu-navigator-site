@@ -66,7 +66,7 @@ function knownEvents(): CalendarEvent[] {
             start: '0830',
             end: '1600',
             location: 'Cal State Fullerton (in person)',
-            description: 'Demo event from the CSU Student Engagement Platform. Confirm details with the CSUF orientation office.',
+            description: 'From the Student Engagement Platform (CSU demo). Check the details with the CSUF orientation office.',
         })),
         {
             id: 'verification',
@@ -84,7 +84,7 @@ function knownEvents(): CalendarEvent[] {
             start: null,
             end: null,
             location: 'Cal State Fullerton',
-            description: 'Demo reminder from the CSU Student Engagement Platform.',
+            description: 'Reminder from the Student Engagement Platform (CSU demo).',
         },
     ];
 }
@@ -120,7 +120,7 @@ function buildIcs(e: CalendarEvent): string {
     const lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
-        'PRODID:-//CSU Student Engagement Platform//Demo//EN',
+        'PRODID:-//Student Engagement Platform//CSU Demo//EN',
         'BEGIN:VEVENT',
         `UID:${e.id}-${e.date}@csu-sep-demo`,
         `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,

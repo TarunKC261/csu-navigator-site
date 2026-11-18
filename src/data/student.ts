@@ -226,7 +226,7 @@ const MARIA: StudentRecord = {
         },
     ],
     lastText:
-        "Hi Maria, it's the CSU Student Engagement Platform. A couple of things could hold up your start at Cal State Fullerton. Tap here and I'll walk you through them, it takes about 5 minutes.",
+        "Hi Maria, it's the Student Engagement Platform. Two things could hold up your start at Cal State Fullerton. Tap here and we'll go through them. It takes about 5 minutes.",
 };
 
 /** The record for this session. Always Maria in this build. */

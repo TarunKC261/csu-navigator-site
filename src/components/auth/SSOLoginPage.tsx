@@ -46,27 +46,26 @@ export function SSOLoginPage({ onSignIn, onPasswordSignIn, error }: SSOLoginPage
       <div className="relative flex flex-col justify-between overflow-hidden bg-[var(--henkel-ink)] px-8 py-12 text-white md:w-1/2 md:px-16 md:py-16">
         {/* CSU red band, the one accent on the dark panel */}
         <div aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-[var(--henkel-red)]" />
-        <BrandMark tone="light" />
+        <BrandMark tone="light" withName />
 
         <div className="my-16 md:my-0">
           <h1 className="text-4xl font-bold leading-tight md:text-5xl">
-            From &ldquo;I&rsquo;m in&rdquo;
+            Get ready for
             <br />
-            to day one.
+            your first semester
           </h1>
           <p className="mt-6 max-w-md text-white/70">
-            The CSU Student Engagement Platform walks admitted students through financial aid, orientation, classes and
-            campus life, by voice or chat, one clear next step at a time.
+            Help with financial aid, orientation and classes for students admitted to CSU.
           </p>
         </div>
 
-        <p className="text-xs text-white/50">California State University · Demo with sample data</p>
+        <p className="text-xs text-white/50">CSU demo · sample data</p>
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-[var(--henkel-surface-alt)] px-8 py-16">
         <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-bold text-[var(--henkel-ink)]">Welcome</h2>
-          <p className="mt-1 text-[var(--henkel-ink-muted)]">Sign in to the CSU Student Engagement Platform</p>
+          <h2 className="text-2xl font-bold text-[var(--henkel-ink)]">Sign in</h2>
+          <p className="mt-1 text-[var(--henkel-ink-muted)]">Use your campus account.</p>
 
           <Button
             onClick={onSignIn}

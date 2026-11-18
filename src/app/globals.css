@@ -96,12 +96,15 @@
   --theme-footer-text: rgba(4, 30, 66, 0.6);
 
   /* ── Brand tokens (CSU colours; the --henkel-* names are kept so every component keeps working) ── */
-  --henkel-red: #C91235;
-  --henkel-red-hover: #A00E2A;
+  --henkel-red: #CF102D; /* CSU red, same as the logo */
+  --henkel-red-hover: #A50D24;
   --henkel-ink: #1A1A1A;
   --henkel-ink-muted: #5A5A5A;
   --henkel-surface: #FFFFFF;
-  --henkel-surface-alt: #F5F7FA;
+  --henkel-surface-alt: #F2F2F2;
+  /* CSU look (2026-11-18): light grey page, grey card panels, white boxes inside. */
+  --csu-page: #F2F2F2;
+  --csu-card: #E8E8E8;
   --henkel-border: #E5E7EB;
   --henkel-success: #16A34A;
   --henkel-elevation: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -114,7 +117,7 @@
   --csu-ink: var(--henkel-ink);
   --csu-ink-muted: var(--henkel-ink-muted);
   --csu-surface: var(--henkel-surface);
-  --csu-surface-alt: var(--henkel-surface-alt);
+  --csu-surface-alt: #FFFFFF; /* boxes inside a grey card */
   --csu-border: var(--henkel-border);
   --csu-success: var(--henkel-success);
   --csu-danger: #8E0D25;
@@ -125,7 +128,7 @@
 
 /* ── Body background ── enterprise neutral */
 body {
-  background-color: #F5F7FA;
+  background-color: var(--csu-page);
   color: #1A1A1A;
   transition: background-color 0.6s ease, color 0.6s ease;
 }
@@ -232,7 +235,28 @@ body {
      one `.btn-coin`), moving its LEFT edge left by a coin so the strip controls and
      the shroud follow it left, and giving the strip room for a dead-centre zoom.
      Paired with --avatar-shift-x below (avatar also moved left a coin). */
-  --avatar-col-w: calc(clamp(14rem, min(32vw, calc(0.92 * (100dvh - 116px))), 40rem) + 2rem);
+  /* 2026-11-19: 32vw/0.92 -> 36vw/0.72. THE VERTICAL GAP.
+     The avatar is object-fit:contain anchored CENTER BOTTOM, so her rendered
+     height is (column width / frame aspect) x --avatar-scale. Her height
+     therefore followed the column WIDTH while the row height followed the
+     viewport HEIGHT, and the two are not related. Whenever
+     width/height came out smaller than it did on the machine this was tuned
+     on, she got shorter than her row and sat at the bottom of it, leaving
+     white space between the header and the top of her frame.
+
+       1223x623 viewport -> col 423, width/height 0.772   (tuned here, flush)
+       1699x935 viewport -> col 576, width/height 0.664   (short, gap on top)
+
+     Both viewports are from session logs, not from measuring screenshots:
+     dpr is 1.5 on both machines, so a 1834x934 capture is a 1223x623 page.
+
+     Driving the column from the ROW HEIGHT instead makes that ratio a
+     constant, so she fills her row by the same amount on every screen.
+     0.772 reproduces 423px on the machine above, so that machine does not
+     move at all. 40vw stays as the guard for narrow viewports, where
+     the content column needs protecting; it simply no longer binds first on
+     an ordinary laptop. The clamp still caps her at 40rem. */
+  --avatar-col-w: calc(clamp(14rem, min(40vw, calc(0.772 * (100dvh - 116px))), 40rem) + 2rem);
 
   /* Room plate scale. `background-size: auto var(--room-h)` is height-driven.
      Note the direction of this control: at 100% the plate's FULL vertical extent
@@ -972,7 +996,7 @@ body {
      be a permanent grey `--theme-card-bg` + blur, which is why the error card looked
      frosted-grey all the time and did not respond to the chip. No reason for it to be
      the odd one out. */
-  background: #FFFFFF;
+  background: var(--csu-card);
   border: 1px solid var(--theme-card-border);
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
@@ -1077,7 +1101,7 @@ body[data-avatar-blend="frosted"] .dx-card {
      never width or padding. Text and inner boxes are opaque children, unaffected.
      Solving the inner-box overlap (a grey pill / a button sitting over her) is the
      NEXT step, once the surfaces are agreed. */
-  background: rgba(255, 255, 255, 0.66) !important;
+  background: rgba(232, 232, 232, 0.66) !important;
 }
 
 body[data-avatar-blend="frosted"] .dx-card {

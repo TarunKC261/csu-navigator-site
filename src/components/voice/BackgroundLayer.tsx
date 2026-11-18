@@ -204,7 +204,7 @@ export function BackgroundLayer() {
           inset: 0,
           zIndex: -1,
           pointerEvents: 'none',
-          background: '#FFFFFF',
+          background: 'var(--csu-page)',
         }}
       />
 

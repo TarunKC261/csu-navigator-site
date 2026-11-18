@@ -18,7 +18,7 @@ import { dict } from '@/lib/i18n/dict';
  *   2. Every field stays editable before the student saves.
  *   3. Saving is the STUDENT'S click, never the agent's.
  *
- * DEMO RULE (CSU Student Engagement Platform): nothing leaves this demo. The
+ * DEMO RULE (Student Engagement Platform, CSU demo): nothing leaves this demo. The
  * button SAVES the form in the browser with a reference number and the card
  * says "Saved". It never says "sent" or "submitted". Val is told
  * with a `[FORM SAVED]` note carrying the reference, so she can read it back.
@@ -33,7 +33,7 @@ const STRINGS = dict({
         saved: 'Saved',
         savedBody: 'When this platform is integrated with your campus, this information goes to your campus system.\nThis reference is your proof when you contact your campus.',
         reference: 'Your reference',
-        failed: 'That did not save',
+        failed: 'That didn’t save',
     },
     es: {
         prefilled: 'Completado desde tu expediente de CSU',
@@ -201,7 +201,7 @@ export function FormCard({ formId, title, intro, fields, submitLabel, submitPhra
 
     if (state === 'saved') {
         return (
-            <div className="flex h-full flex-col items-center justify-center rounded-xl border border-[var(--csu-border)] bg-[var(--csu-surface)] p-6 text-center shadow-[var(--csu-elevation)]">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[var(--csu-border)] bg-[var(--csu-card)] p-6 text-center shadow-[var(--csu-elevation)]">
                 <div className="flex size-12 items-center justify-center rounded-full bg-[var(--csu-success)]/12">
                     <CheckCircle2 className="size-6 text-[var(--csu-success)]" aria-hidden />
                 </div>
@@ -219,12 +219,12 @@ export function FormCard({ formId, title, intro, fields, submitLabel, submitPhra
     }
 
     return (
-        <div className="flex h-full flex-col rounded-xl border border-[var(--csu-border)] bg-[var(--csu-surface)] p-5 shadow-[var(--csu-elevation)]">
+        <div className="flex max-h-full flex-col overflow-y-auto rounded-xl border border-[var(--csu-border)] bg-[var(--csu-card)] p-5 shadow-[var(--csu-elevation)]">
             <header>
                 <h3 className="font-voice text-lg font-semibold text-[var(--csu-ink)]">{title ?? 'Form'}</h3>
                 {intro && <p className="mt-1 text-[14px] leading-relaxed text-[var(--csu-ink-muted)]">{intro}</p>}
                 {prefilledCount > 0 && (
-                    <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[var(--csu-gold-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--csu-ink)]">
+                    <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[12px] font-medium text-[var(--csu-ink)]">
                         <Sparkles className="size-3.5" aria-hidden />
                         {t.prefilled}
                     </p>
@@ -258,7 +258,7 @@ export function FormCard({ formId, title, intro, fields, submitLabel, submitPhra
                                 onClick={() => setEditing(i)}
                                 className={[
                                     'flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-[14px] transition-colors',
-                                    f.prefilled ? 'border-[var(--csu-gold)]/45 bg-[var(--csu-gold-soft)]' : 'border-[var(--csu-border)] bg-white',
+                                    f.prefilled ? 'border-[var(--csu-gold)]/45 bg-white' : 'border-[var(--csu-border)] bg-white',
                                 ].join(' ')}
                             >
                                 <span className="min-w-0 truncate text-[var(--csu-ink)]">{values[i] || '—'}</span>
