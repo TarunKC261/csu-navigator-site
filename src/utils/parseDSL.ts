@@ -69,6 +69,11 @@ export const DSL_SCHEMA: Record<string, { pipeCount: number; fields: string[] }>
     'resolve-page':      { pipeCount: 6, fields: ['problemTitle','detectedCategory','detectedDevice','helperText','sources (semicolon-separated)','results (semicolon-separated `source^badge^matchPercent^title^snippet^url` rows — caret delimiter inside, since `|` would collide with the top-level row grammar)'] },
     'question-card':     { pipeCount: 4, fields: ['question','options','hint','field'] },
     'info-card':         { pipeCount: 5, fields: ['icon','title','body','cta','ctaPhrase'] },
+    // CSU student cards (merged from Venkat's build). Drawn by site functions from the
+    // student record (showJourney / showCost / prefillForm); inner rows use `^` and `;`.
+    'journey-card':      { pipeCount: 5, fields: ['studentName','campus','term','steps (semicolon-separated `label^status^due^phrase` rows)','daysToStart'] },
+    'aid-card':          { pipeCount: 8, fields: ['tuition','fees','total','grants (semicolon-separated `label^amount` rows)','status (hold|awarded|pending)','note','url','actionPhrase'] },
+    'form-card':         { pipeCount: 6, fields: ['title','intro','fields (semicolon-separated `label^value^prefilled` rows)','submitLabel','submitPhrase','formId'] },
     'country-card':      { pipeCount: 7, fields: ['country','flag','revenue','employees','politicalRisk','relationshipHealth','keyContact'] },
     // Container headers
     'kpi-strip':         { pipeCount: 0, fields: [] },
@@ -166,6 +171,7 @@ const FLAT_TYPES        = new Set([
     'stat', 'callout', 'person-card', 'relationship-card',
     'incident-card', 'info-card', 'country-card', 'image-card',
     'incident-draft', 'kb-suggestion', 'resolve-page', 'question-card',
+    'journey-card', 'aid-card', 'form-card',
 ]);
 
 // ── Item parsers ──────────────────────────────────────────────────────────────
@@ -405,6 +411,18 @@ function parseFlatCard(type: string, fields: string[], span?: 'full'): CardDef |
                 sources: n(sources),
                 results: n(results),
             });
+        }
+        case 'journey-card': {
+            const [studentName, campus, term, steps, daysToStart] = fields;
+            return Object.assign(card, { studentName: n(studentName), campus: n(campus), term: n(term), steps: n(steps), daysToStart: n(daysToStart) });
+        }
+        case 'aid-card': {
+            const [tuition, fees, total, grants, status, note, url, actionPhrase] = fields;
+            return Object.assign(card, { tuition: n(tuition), fees: n(fees), total: n(total), grants: n(grants), status: n(status), note: n(note), url: n(url), actionPhrase: n(actionPhrase) });
+        }
+        case 'form-card': {
+            const [title, intro, formFields, submitLabel, submitPhrase, formId] = fields;
+            return Object.assign(card, { title: n(title), intro: n(intro), fields: n(formFields), submitLabel: n(submitLabel), submitPhrase: n(submitPhrase), formId: n(formId) });
         }
         case 'info-card': {
             const [icon, title, body, cta, ctaPhrase] = fields;

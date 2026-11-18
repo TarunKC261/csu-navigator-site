@@ -6,9 +6,10 @@ import { useIdentity } from '@/lib/identity/useIdentity';
 import { useCallsStore, callUserKey } from '@/lib/stores/calls-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // Self-service page chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 // The tellAgent command phrases stay English; only display is localized.
-const RESOLVE_STRINGS = {
+const RESOLVE_STRINGS = dict({
   en: {
     banner: "Let's try to fix this before creating a ticket. We searched trusted sources for your issue — if none of these help, you can still create the incident below.",
     reconnecting: 'Reconnecting to the assistant. One moment, then try again.',
@@ -27,7 +28,7 @@ const RESOLVE_STRINGS = {
     createAnyway: 'Trotzdem Vorfall erstellen', fine: 'Passt schon, kein Ticket nötig', solvedIt: 'Das hat es gelöst',
     working: 'Einen Moment, ich hole das für Sie.',
   },
-} as const;
+});
 
 /**
  * ResolvePage — "Let's fix this before creating a ticket" self-service page.

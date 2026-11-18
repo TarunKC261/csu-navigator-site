@@ -32,4 +32,10 @@ window.__DX_CONFIG__ = {
   // Official CSU logo file once received from CSU Marketing Communications,
   // e.g. '/brand/csu-wordmark.svg' (put the file in public/brand/). '' = text label.
   BRAND_LOGO_URL: '',
+
+  // Student verification door, shown after sign-in and before Maria's record
+  // opens. 'mock' = a six-digit code is made in the browser and shown on screen
+  // as a simulated text message (nothing is really sent; it is a demo of the
+  // step, not a security control). 'off' = skip the door.
+  VERIFY_GATE: 'mock',
 };

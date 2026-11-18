@@ -14,6 +14,7 @@ import {
 } from '@/lib/icons';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
+import { dict } from '@/lib/i18n/dict';
 
 // Icons + per-step number stay here; the words come from STRINGS so the home
 // follows the EN/DE toggle (owner 2026-10-16).
@@ -59,7 +60,104 @@ const STRINGS_EN = {
   voiceCapabilities: 'What I can help with',
   capabilities: ['Explain a financial aid hold', 'Prepare your verification form', 'Pick an orientation date', 'Plan a 15-unit schedule', 'Show costs and pending aid', 'Compare CSU campuses', 'Map your major to a career', 'Connect you with a person'],
 };
-const STRINGS = { en: STRINGS_EN, de: STRINGS_EN } as const;
+// Page text follows Val's language (setLocale). Non-English is a first draft:
+// have a native speaker review before a client demo. The quick-action PHRASES
+// stay English (QUICK_ACTIONS above): they are what the agent parses, and Val
+// answers in the current conversation language anyway.
+const STRINGS = dict({
+  en: STRINGS_EN,
+  es: {
+    eyebrow: 'Inicio · Apoyo para estudiantes admitidos',
+    heroA: '¿Te admitieron? Te ayudamos a llegar', heroB: 'al primer día.',
+    lede1: 'Orientación personal para ', ledeAcc1: 'estudiantes admitidos en CSU',
+    lede2: ', por voz o por chat. Pregunta sobre ayuda financiera, orientación, clases o vida en el campus, y Val te muestra ',
+    ledeAcc2: 'tu siguiente paso', lede3: ', con los formularios, fechas y personas que te pueden ayudar.',
+    steps: [
+      { title: 'Pregunta', caption: 'Habla o escribe tu pregunta' },
+      { title: 'Ve tu siguiente paso', caption: 'Tu lista, costos y fechas en pantalla' },
+      { title: 'Hazlo', caption: 'Formularios listos para enviar y una persona cuando la necesites' },
+    ],
+    instantResolution: 'Un paso claro a la vez, para que nada retrase tu primer día',
+    console: 'Tu camino como estudiante',
+    highlights: ['Voz o chat, ideal para el celular', 'Ayuda financiera y verificación', 'Orientación e inscripción', 'Vida en el campus y carreras'],
+    quickActions: ['Arreglar mi ayuda financiera', 'Reservar orientación', 'Mis clases', '¿Qué me falta?'],
+    quickActionsLabel: 'Acciones rápidas',
+    reviewBadge: 'REVISA ANTES DE ENVIAR',
+    working: 'Un momento, ya lo busco.',
+    readyHint: 'Listo: empieza a hablar o elige una acción rápida',
+    connectingHint: 'Conectando con Val…',
+    voiceCapabilities: 'En qué te puedo ayudar',
+    capabilities: ['Explicar una retención de ayuda financiera', 'Preparar tu formulario de verificación', 'Elegir una fecha de orientación', 'Planear un horario de 15 unidades', 'Mostrar costos y ayuda pendiente', 'Comparar campus de CSU', 'Relacionar tu carrera con un empleo', 'Conectarte con una persona'],
+  },
+  zh: {
+    eyebrow: '首页 · 录取学生支持',
+    heroA: '已被录取？我们陪你走到', heroB: '开学第一天。',
+    lede1: '为', ledeAcc1: 'CSU 录取学生', lede2: '提供个人指导，语音或聊天都可以。询问助学金、新生指导、课程或校园生活，Val 会为你展示',
+    ledeAcc2: '下一步', lede3: '，以及相关表格、日期和可以帮你的人。',
+    steps: [
+      { title: '提问', caption: '说出或输入你的问题' },
+      { title: '查看下一步', caption: '清单、费用和日期都显示在屏幕上' },
+      { title: '完成它', caption: '表格已准备好提交，需要时有人帮你' },
+    ],
+    instantResolution: '一次一个清楚的步骤，让开学第一天不被耽误',
+    console: '你的学生旅程',
+    highlights: ['语音或聊天，适合手机', '助学金与核实', '新生指导与选课注册', '校园生活与职业路径'],
+    quickActions: ['解决我的助学金问题', '预约新生指导', '我的课程', '还剩什么？'],
+    quickActionsLabel: '快捷操作',
+    reviewBadge: '提交前请检查',
+    working: '请稍等，我马上为你处理。',
+    readyHint: '准备好了：直接开口说，或选择一个快捷操作',
+    connectingHint: '正在连接 Val…',
+    voiceCapabilities: '我可以帮你做什么',
+    capabilities: ['解释助学金暂停', '准备你的核实表格', '选择新生指导日期', '规划 15 学分课表', '显示费用和待定助学金', '比较 CSU 各校区', '把专业和职业联系起来', '帮你联系真人'],
+  },
+  tl: {
+    eyebrow: 'Home · Suporta para sa mga Na-admit na Estudyante',
+    heroA: 'Na-admit ka na? Tutulungan ka naming makarating', heroB: 'sa unang araw.',
+    lede1: 'Personal na gabay para sa ', ledeAcc1: 'mga na-admit na estudyante ng CSU',
+    lede2: ', sa boses o chat. Magtanong tungkol sa financial aid, orientation, klase o buhay sa campus, at ipapakita ni Val ',
+    ledeAcc2: 'ang susunod mong hakbang', lede3: ', kasama ang mga form, petsa at taong makakatulong.',
+    steps: [
+      { title: 'Magtanong', caption: 'Sabihin o i-type ang tanong mo' },
+      { title: 'Tingnan ang susunod na hakbang', caption: 'Ang checklist, gastos at petsa mo sa screen' },
+      { title: 'Tapusin ito', caption: 'Handa nang i-submit ang mga form, at may tao kapag kailangan mo' },
+    ],
+    instantResolution: 'Isang malinaw na hakbang sa bawat pagkakataon, para walang makaantala sa unang araw mo',
+    console: 'Ang student journey mo',
+    highlights: ['Boses o chat, swak sa phone', 'Financial aid at verification', 'Orientation at registration', 'Buhay sa campus at career paths'],
+    quickActions: ['Ayusin ang financial aid ko', 'Mag-book ng orientation', 'Mga klase ko', 'Ano pa ang kulang?'],
+    quickActionsLabel: 'Mabilis na aksyon',
+    reviewBadge: 'SURIIN BAGO I-SUBMIT',
+    working: 'Sandali lang, kinukuha ko na.',
+    readyHint: 'Handa na: magsalita lang, o pumili ng mabilis na aksyon',
+    connectingHint: 'Kumokonekta kay Val…',
+    voiceCapabilities: 'Ano ang matutulong ko',
+    capabilities: ['Ipaliwanag ang hold sa financial aid', 'Ihanda ang verification form mo', 'Pumili ng petsa ng orientation', 'Magplano ng 15-unit na schedule', 'Ipakita ang gastos at nakabinbing aid', 'Ihambing ang mga campus ng CSU', 'Iugnay ang major mo sa career', 'Ikonekta ka sa isang tao'],
+  },
+  vi: {
+    eyebrow: 'Trang chủ · Hỗ trợ sinh viên trúng tuyển',
+    heroA: 'Đã trúng tuyển? Cùng bạn đến', heroB: 'ngày đầu tiên.',
+    lede1: 'Hướng dẫn cá nhân cho ', ledeAcc1: 'sinh viên trúng tuyển CSU',
+    lede2: ', bằng giọng nói hoặc trò chuyện. Hỏi về hỗ trợ tài chính, định hướng, lớp học hay đời sống ở trường, và Val sẽ cho bạn thấy ',
+    ledeAcc2: 'bước tiếp theo', lede3: ', cùng các biểu mẫu, ngày tháng và người có thể giúp bạn.',
+    steps: [
+      { title: 'Hỏi', caption: 'Nói hoặc gõ câu hỏi của bạn' },
+      { title: 'Xem bước tiếp theo', caption: 'Danh sách việc, chi phí và ngày tháng trên màn hình' },
+      { title: 'Hoàn thành', caption: 'Biểu mẫu sẵn sàng để nộp, có người hỗ trợ khi bạn cần' },
+    ],
+    instantResolution: 'Mỗi lần một bước rõ ràng, để không gì cản trở ngày đầu tiên của bạn',
+    console: 'Hành trình sinh viên của bạn',
+    highlights: ['Giọng nói hoặc trò chuyện, tiện trên điện thoại', 'Hỗ trợ tài chính và xác minh', 'Định hướng và đăng ký lớp', 'Đời sống ở trường và lộ trình nghề nghiệp'],
+    quickActions: ['Giải quyết hỗ trợ tài chính', 'Đặt buổi định hướng', 'Lớp học của tôi', 'Còn lại gì?'],
+    quickActionsLabel: 'Thao tác nhanh',
+    reviewBadge: 'XEM LẠI TRƯỚC KHI NỘP',
+    working: 'Chờ một chút, mình lấy ngay cho bạn.',
+    readyHint: 'Sẵn sàng: cứ bắt đầu nói, hoặc chọn một thao tác nhanh',
+    connectingHint: 'Đang kết nối với Val…',
+    voiceCapabilities: 'Mình có thể giúp gì',
+    capabilities: ['Giải thích việc tạm giữ hỗ trợ tài chính', 'Chuẩn bị biểu mẫu xác minh', 'Chọn ngày định hướng', 'Lên lịch học 15 tín chỉ', 'Hiển thị chi phí và hỗ trợ đang chờ', 'So sánh các cơ sở CSU', 'Kết nối ngành học với nghề nghiệp', 'Kết nối bạn với một người thật'],
+  },
+});
 
 /** CSU-red emphasis inside the lede. Not interactive. */
 function Accent({ children }: { children: React.ReactNode }) {

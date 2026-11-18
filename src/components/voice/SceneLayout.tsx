@@ -3,6 +3,8 @@
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { SceneManager } from '@/components/voice/SceneManager';
 import { useEffect } from 'react';
+import { useGateStore } from '@/lib/stores/gate-store';
+import { VerifyGate } from '@/components/voice/VerifyGate';
 
 /** Always-mounted keyboard navigation for scene back/forward */
 function SceneKeyboardNav() {
@@ -47,8 +49,16 @@ export function SceneLayout({ children }: { children: React.ReactNode }) {
   const sceneActive = useVoiceSessionStore((s) => s.sceneActive);
   const skeletonLayout = useVoiceSessionStore((s) => s.skeletonLayout);
 
+  // CSU student door (merged from Venkat's build): while the one-time code has
+  // not been entered, the door owns the content area, even if a scene arrives.
+  const doorShut = useGateStore((s) => s.enabled() && s.status !== 'verified');
+
   // Show SceneManager when scene is active OR when there's content to show
   const showScene = sceneActive || currentScene || skeletonLayout;
+
+  if (doorShut) {
+    return <VerifyGate />;
+  }
 
   return (
     <>

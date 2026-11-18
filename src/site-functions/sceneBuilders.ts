@@ -185,6 +185,63 @@ export function buildResolvePage(fields: ResolvePageFields): string {
     return `resolve-page|${f(fields.problemTitle)}|${f(fields.detectedCategory)}|${f(fields.detectedDevice)}|${f(fields.helperText)}|${f(sourcesStr)}|${f(resultsStr)}`;
 }
 
+// ── CSU student cards (merged from Venkat's build) ─────────────────────────
+// Inner rows use `^` between columns and `;` between rows, so values must not
+// contain either. `inner()` strips them.
+function inner(v: unknown): string {
+    return String(v ?? '').replace(/[\^;|]/g, ',').replace(/\r?\n/g, ' ').trim();
+}
+
+export interface JourneyCardFields {
+    studentName?: string;
+    campus?: string;
+    term?: string;
+    steps?: Array<{ label: string; status: string; due?: string; phrase?: string }>;
+    daysToStart?: number;
+}
+export function buildJourneyCard(fields: JourneyCardFields): string {
+    const steps = (fields.steps ?? [])
+        .map((s) => [inner(s.label), inner(s.status || 'not-started'), inner(s.due), inner(s.phrase)].join('^'))
+        .filter((row) => row.split('^')[0])
+        .join(';');
+    return `journey-card|${f(fields.studentName)}|${f(fields.campus)}|${f(fields.term)}|${f(steps)}|${f(fields.daysToStart)}`;
+}
+
+export interface AidCardFields {
+    tuition?: number;
+    fees?: number;
+    total?: number;
+    grants?: Array<{ label: string; amount: number }>;
+    status?: string;
+    note?: string;
+    url?: string;
+    actionPhrase?: string;
+}
+export function buildAidCard(fields: AidCardFields): string {
+    const grants = (fields.grants ?? []).map((g) => `${inner(g.label)}^${inner(g.amount)}`).join(';');
+    return `aid-card|${f(fields.tuition)}|${f(fields.fees)}|${f(fields.total)}|${f(grants)}|${f(fields.status ?? 'pending')}|${f(fields.note)}|${f(fields.url)}|${f(fields.actionPhrase)}`;
+}
+
+export interface FormFieldSpec {
+    label: string;
+    value: string;
+    prefilled?: boolean;
+}
+export interface FormCardFields {
+    formId?: string;
+    title?: string;
+    intro?: string;
+    fields?: FormFieldSpec[];
+    submitLabel?: string;
+    submitPhrase?: string;
+}
+export function buildFormCard(fields: FormCardFields): string {
+    const rows = (fields.fields ?? [])
+        .map((x) => `${inner(x.label)}^${inner(x.value)}^${x.prefilled ? '1' : '0'}`)
+        .join(';');
+    return `form-card|${f(fields.title)}|${f(fields.intro)}|${f(rows)}|${f(fields.submitLabel)}|${f(fields.submitPhrase)}|${f(fields.formId)}`;
+}
+
 // ── Template registry ───────────────────────────────────────────────────────
 
 export type TemplateName =
@@ -193,7 +250,10 @@ export type TemplateName =
     | 'incident-card'
     | 'info-card'
     | 'kb-suggestion'
-    | 'resolve-page';
+    | 'resolve-page'
+    | 'journey-card'
+    | 'aid-card'
+    | 'form-card';
 
 export const TEMPLATE_BUILDERS: Record<TemplateName, (fields: any) => string> = {
     'question-card': buildQuestionCard,
@@ -202,6 +262,9 @@ export const TEMPLATE_BUILDERS: Record<TemplateName, (fields: any) => string> = 
     'info-card': buildInfoCard,
     'kb-suggestion': buildKbSuggestion,
     'resolve-page': buildResolvePage,
+    'journey-card': buildJourneyCard,
+    'aid-card': buildAidCard,
+    'form-card': buildFormCard,
 };
 
 /** Wrap one or more rows + optional badge/layout into a parseable DSL block. */

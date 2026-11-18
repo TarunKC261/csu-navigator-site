@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { siteFunctionManifestForWire } from '@/site-functions/register';
+import { useGateStore } from '@/lib/stores/gate-store';
+import { getStudent } from '@/data/student';
 import {
   Room,
   RoomEvent,
@@ -292,6 +295,9 @@ interface VoiceSessionState {
   // greetWhenReady: once acknowledged, wait until the agent (and avatar video,
   // if the avatar is enabled) is ready, then speak the greeting exactly once.
   greetWhenReady: () => Promise<void>;
+  // CSU: once the student door opens, speak the warm greeting (if the page had
+  // only spoken the door line) and tell Val the record is open.
+  greetAfterVerification: () => Promise<void>;
   disconnect: () => Promise<void>;
   /**
    * Microphone preference chosen on the pre-session gate, Zoom style.
@@ -381,6 +387,39 @@ function partOfDay(): string {
 // CSU: two tails. With a demo persona configured (config.js GREETING_NAME, e.g.
 // 'Maria') the greeting opens her story exactly as the Val prompt expects; with
 // none, a general welcome for whoever signed in.
+/**
+ * CSU (merged from Venkat's build): send the site-function manifest with the
+ * session request, so the platform gives Val the student tools (showJourney,
+ * showCost, prefillForm, addToCalendar, verifyCode, setLocale,
+ * getStudentProfile) as named tools. If the platform refuses the request
+ * (400/422, e.g. a stricter manifest schema), retry once WITHOUT the manifest,
+ * so the worst case is "Val has no student tools", never "Val does not connect".
+ */
+async function postWithManifest(
+  url: string,
+  credentials: RequestCredentials,
+  base: Record<string, unknown>,
+): Promise<Response> {
+  const init = (body: Record<string, unknown>): RequestInit => ({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials,
+    body: JSON.stringify(body),
+  });
+  let manifest: ReturnType<typeof siteFunctionManifestForWire> = [];
+  try {
+    manifest = siteFunctionManifestForWire();
+  } catch {
+    manifest = [];
+  }
+  if (manifest.length === 0) return fetch(url, init(base));
+  logEvent('network', `session request carries ${manifest.length} site functions`);
+  const first = await fetch(url, init({ ...base, siteFunctionManifest: manifest }));
+  if (first.status !== 400 && first.status !== 422) return first;
+  logEvent('error', `session request refused with the site-function manifest (${first.status}); retrying without it`);
+  return fetch(url, init(base));
+}
+
 const GREETING_TAIL_PERSONA =
   "from the CSU Student Engagement Platform. Two things could hold up your start at Fullerton, and both are fixable today. Want to start with your financial aid?";
 const GREETING_TAIL_GENERAL =
@@ -436,6 +475,17 @@ export const GREETING_TEXT = buildGreeting(null);
 // flag is the durable once-per-session guard; this covers the race window
 // before the first agentSay resolves.
 let _greetingInFlight = false;
+/** Which line the page greeted with: the verification door line or the warm welcome. */
+let _greetingKind: 'door' | 'welcome' | null = null;
+
+/** The door line: welcoming, and nothing from the record except the masked phone ending. */
+export function buildDoorLine(): string {
+  const last4 = getStudent().phoneLast4.split('').join(' ');
+  return (
+    "Hi, and welcome to the C-S-U Student Engagement Platform. Before I open your record, I just need to check it's really you. " +
+    `I've sent a six-digit code to the phone ending in ${last4}. Type it in, or read it out to me.`
+  );
+}
 
 // Masked-reconnect watchdog. Set while LiveKit is mid-reconnect; if it does not
 // clear (session back to `connected`) within RECONNECT_HANG_MS, the timer forces
@@ -529,12 +579,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
       // Call prepare endpoint - creates room, returns token (no agent dispatch)
       logEvent('network', 'POST /api/widget/session/prepare - request');
-      const response = await fetch(`${widgetHost}/api/widget/session/prepare`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: be.credentials,
-        body: JSON.stringify(be.useKey ? { apiKey } : {}),
-      });
+      const response = await postWithManifest(`${widgetHost}/api/widget/session/prepare`, be.credentials, be.useKey ? { apiKey } : {});
 
       if (!response.ok) {
         console.warn('Pre-warm prepare failed:', response.status);
@@ -762,12 +807,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
       // Create session via widget API (original flow: room + agent dispatch together)
       logEvent('network', 'POST /api/widget/session - request (SLOW path, no prewarm)');
-      const response = await fetch(`${widgetHost}/api/widget/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: be.credentials,
-        body: JSON.stringify(be.useKey ? { apiKey } : {}),
-      });
+      const response = await postWithManifest(`${widgetHost}/api/widget/session`, be.credentials, be.useKey ? { apiKey } : {});
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -931,6 +971,46 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
   // `lk.agent.state`, and `updateAgentStateFromAttributes` already tracks it),
   // subscribe rather than poll, and no deadline at all. The guards
   // `_greetingSpoken` / `_greetingInFlight` are kept.
+  greetAfterVerification: async () => {
+    const gate = useGateStore.getState();
+    if (!gate.enabled() || gate.status !== 'verified' || gate.announced) return;
+    gate.markAnnounced();
+
+    // If the door line is still on its way (verified very fast), wait for it.
+    if (!get()._greetingSpoken && (_greetingInFlight || get().sessionState === 'connected')) {
+      await new Promise<void>((resolve) => {
+        const cap = setTimeout(() => { unsub(); resolve(); }, 20000);
+        const unsub = useVoiceSessionStore.subscribe(() => {
+          if (get()._greetingSpoken || get().sessionState !== 'connected') {
+            clearTimeout(cap); unsub(); resolve();
+          }
+        });
+      });
+    }
+
+    if (!get()._greetingSpoken || _greetingKind !== 'door') {
+      // Not connected yet, or the page greeted with the warm welcome already
+      // (the door opened before the agent was ready). greetWhenReady covers it.
+      logEvent('agent', 'door opened: no separate welcome needed', { kind: _greetingKind });
+      if (get()._greetingSpoken) {
+        void get().informAgent('[SYSTEM] VERIFIED. The student passed the six-digit code check; her record is open. Never ask for a code again.');
+      }
+      return;
+    }
+
+    const body = buildGreetingBody(get().greetingName);
+    logEvent('agent', 'door opened: speaking the welcome');
+    const r = await get().agentSay(body);
+    _greetingKind = 'welcome';
+    void get().informAgent(
+      '[SYSTEM] VERIFIED. The student passed the six-digit code check; her record is open now and all your normal rules apply. ' +
+        (r?.success === true
+          ? `The page has greeted her aloud with: "${body}" Do not greet again. Reply directly to her next message.`
+          : `Greet her now in one short line: "${body}"`) +
+        ' Never ask for a code again.',
+    );
+  },
+
   greetWhenReady: async () => {
     if (get()._greetingSpoken || _greetingInFlight) return;
     _greetingInFlight = true;
@@ -1085,17 +1165,27 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
 
       // Primary: exact wording via direct TTS (agentSay). Some agent builds do
       // not register the agentSay RPC, so fall back to askAgent.
-      const text = buildGreetingBody(get().greetingName);
+      // CSU student door: while the six-digit code has not been entered, the page
+      // speaks the DOOR line (no name, nothing from the record) instead of the
+      // warm greeting. The warm greeting follows in greetAfterVerification.
+      const atDoor = useGateStore.getState().doorShut();
+      const text = atDoor ? buildDoorLine() : buildGreetingBody(get().greetingName);
       const sayResult = await get().agentSay(text);
       if (sayResult?.success === true) {
         set({ _greetingSpoken: true });
-        logEvent("agent", "greet: agentSay succeeded");
+        _greetingKind = atDoor ? 'door' : 'welcome';
+        logEvent("agent", `greet: agentSay succeeded (${_greetingKind})`);
         // CSU: agentSay is direct TTS, so the model never saw the greeting. Tell it
         // (silent context, no reply) so it answers the next message instead of
         // greeting a second time.
         void get().informAgent(
-          `[GREETING] The page has already greeted the user aloud with: "${buildGreetingWarmup()} ${text}" ` +
-          'Do not greet again or re-introduce yourself. Reply directly to their next message.',
+          atDoor
+            ? `[DOOR] The page has greeted the student aloud with: "${buildGreetingWarmup()} ${text}" ` +
+              'The verification door is SHUT: say nothing about the student or her record, do not greet again, and ' +
+              'do not draw cards. If she reads out six digits, call verifyCode with them. If she cannot get the code, ' +
+              'offer a person at her campus. A [SYSTEM] VERIFIED note tells you when the door opens.'
+            : `[GREETING] The page has already greeted the user aloud with: "${buildGreetingWarmup()} ${text}" ` +
+              'Do not greet again or re-introduce yourself. Reply directly to their next message.',
         );
         return;
       }
@@ -1106,6 +1196,7 @@ export const useVoiceSessionStore = create<VoiceSessionState>((set, get) => ({
       );
       if (askResult?.success === true) {
         set({ _greetingSpoken: true });
+        _greetingKind = atDoor ? 'door' : 'welcome';
         logEvent("agent", "greet: askAgent fallback succeeded");
         return;
       }

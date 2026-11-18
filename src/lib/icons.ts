@@ -50,7 +50,9 @@ import {
   IconListCheck,
   IconLock,
   IconLogout,
+  IconMail,
   IconMessageCircle,
+  IconShieldCheck,
   IconMicrophone,
   IconMicrophoneOff,
   IconPower,
@@ -128,6 +130,8 @@ export const ListChecks = wrap(IconListCheck, 'ListChecks');
 export const Lock = wrap(IconLock, 'Lock');
 export const LogOut = wrap(IconLogout, 'LogOut');
 export const MessageCircle = wrap(IconMessageCircle, 'MessageCircle');
+export const Mail = wrap(IconMail, 'Mail');
+export const ShieldCheck = wrap(IconShieldCheck, 'ShieldCheck');
 export const Mic = wrap(IconMicrophone, 'Mic');
 export const MicOff = wrap(IconMicrophoneOff, 'MicOff');
 export const MousePointerClick = wrap(IconClick, 'MousePointerClick');
@@ -175,6 +179,7 @@ export const IconRegistry: Record<string, IconComponent> = {
   ListChecks,
   Lock,
   LogOut,
+  Mail,
   MessageCircle,
   Mic,
   MicOff,
@@ -185,6 +190,7 @@ export const IconRegistry: Record<string, IconComponent> = {
   RefreshCw,
   Search,
   Send,
+  ShieldCheck,
   Sparkles,
   Tag,
   TrendingUp,

@@ -25,6 +25,8 @@ import {
     SurveyCard,
     // "View Calls" list card
     CallsListCard,
+    // CSU student cards (merged from Venkat's build)
+    JourneyCard, AidCard, FormCard,
     // Incident lookup input card
     LookupCard,
     // Executive Action (2)
@@ -75,6 +77,9 @@ const CARD_MAP: Record<string, React.FC<any>> = {
     // Rich Content (4)
     'checklist': ChecklistCard,
     'info-card': InfoCard,
+    'journey-card': JourneyCard,
+    'aid-card': AidCard,
+    'form-card': FormCard,
     'bullet-list': BulletListCard,
     'image-card': ImageCard,
     // Comparison (2)
@@ -116,6 +121,7 @@ const CARD_SIZE: Record<string, number> = {
     'image-card': 2, 'person-card': 2,
     'alert': 2, 'metric-list': 2,
     'bullet-list': 2, 'info-card': 2,
+    'journey-card': 3, 'aid-card': 3, 'form-card': 3,
     'data-cluster': 2, 'checklist': 2, 'org-roster': 2,
     'pipeline-card': 2, 'ranked-list': 2,
     'timeline': 2, 'calendar': 2,
@@ -175,7 +181,7 @@ function renderCard(card: CardDef, index: number) {
     // cascade feel while the whole grid settles inside half a second.
     const enterDelay = `${Math.min(index, 5) * 40}ms`;
     // Card types that always render without the glass box wrapper
-    const BORDERLESS = new Set(['kpi-strip', 'incident-card', 'incident-draft', 'question-card', 'survey-card', 'calls-list-card', 'lookup-card', 'kb-suggestion', 'resolve-page', 'product-carousel', 'product-categories', 'product-detail']);
+    const BORDERLESS = new Set(['kpi-strip', 'incident-card', 'incident-draft', 'question-card', 'survey-card', 'calls-list-card', 'lookup-card', 'kb-suggestion', 'resolve-page', 'product-carousel', 'product-categories', 'product-detail', 'journey-card', 'aid-card', 'form-card']);
     // These card types get the glass border + bg but NO internal padding (flush fill)
     const FLUSH_ROUNDED = new Set(['image-card', 'alert']);
     if (BORDERLESS.has(card.type) || card.borderless) return content;

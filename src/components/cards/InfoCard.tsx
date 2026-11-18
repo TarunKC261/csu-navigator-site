@@ -1,5 +1,6 @@
 import React from 'react';
 import { getIcon } from '@/utils/getIcon';
+import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 
 const C = 'var(--theme-chart-line)';
 const getColor = (opacity: number) => `color-mix(in srgb, var(--theme-chart-line) ${opacity}%, transparent)`;
@@ -55,9 +56,17 @@ interface InfoCardProps {
 
 export const InfoCard: React.FC<InfoCardProps> = ({ icon, title, body, cta, ctaPhrase }) => {
     // When ctaPhrase looks like a URL, render the CTA as an external link
-    // (used for KB self-service articles). Otherwise render the existing
-    // styled button (no-op click handler — kept for backwards compatibility).
-    const isUrl = !!ctaPhrase && /^https?:\/\//i.test(ctaPhrase.trim());
+    // (used for KB self-service articles). A `data:text/calendar` phrase is a
+    // calendar file (addToCalendar) and downloads as event.ics.
+    //
+    // CSU FIX (2026-11-18): the button used to be a no-op, so every
+    // "next step" button Val draws did nothing when tapped. It now sends its
+    // ctaPhrase to Val as the student's message, which is what her prompt
+    // ("A tapped button is her answer") has always assumed.
+    const tellAgent = useVoiceSessionStore((s) => s.tellAgent);
+    const phrase = (ctaPhrase ?? '').trim();
+    const isUrl = /^https?:\/\//i.test(phrase);
+    const isIcs = /^data:text\/calendar/i.test(phrase);
     const ctaStyle = {
         backgroundColor: `${getColor(3)}`,
         color: C,
@@ -71,11 +80,20 @@ export const InfoCard: React.FC<InfoCardProps> = ({ icon, title, body, cta, ctaP
             <p className="font-voice text-base md:text-base leading-relaxed line-clamp-3" style={{ color: `${getColor(85)}` }}>{body}</p>
             {cta && (
                 isUrl ? (
-                    <a href={ctaPhrase!.trim()} target="_blank" rel="noopener noreferrer" className={ctaClass} style={ctaStyle}>
+                    <a href={phrase} target="_blank" rel="noopener noreferrer" className={ctaClass} style={ctaStyle}>
+                        {cta}
+                    </a>
+                ) : isIcs ? (
+                    <a href={phrase} download="event.ics" className={ctaClass} style={ctaStyle}>
                         {cta}
                     </a>
                 ) : (
-                    <button className={ctaClass} style={ctaStyle}>
+                    <button
+                        type="button"
+                        className={ctaClass}
+                        style={ctaStyle}
+                        onClick={() => void tellAgent(phrase || String(cta))}
+                    >
                         {cta}
                     </button>
                 )

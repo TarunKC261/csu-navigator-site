@@ -1,53 +1,50 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Locale } from '@/site-functions/setLocale';
+import { isLocale, DEFAULT_LOCALE, LOCALE_STORAGE_KEY, type Locale } from '@/lib/locales';
 
 export type { Locale };
 
 /**
- * useLocale — the CONSUMER that `setLocale` always assumed but no component ever
- * implemented (owner 2026-10-16).
- *
- * `setLocale` (the agent calls it on a "switch to German" request — PROVEN in
- * AT's 12-28 log: user "Can we switch to German?" → callSiteFunction setLocale
- * {locale:"de"} → agent "Alles klar, ich spreche jetzt Deutsch") sets
- * `<html lang>`, `localStorage['locale-preference']`, and fires a `localechange`
- * CustomEvent. Until now nothing read any of that, so fixed UI chrome stayed
- * English even in a German session. This hook reads it and re-renders on change,
- * so chrome follows the locale the BACKEND set.
- *
- * It does NOT translate dynamic/agent content: titles, summaries and the values
- * already arrive in the right language from the agent. This only drives the
- * client's own fixed labels. SSR-safe: starts 'en' (matches the server render,
- * no hydration mismatch) and corrects on mount.
+ * useLocale: the page-text language, as set by `setLocale` (the agent calls it
+ * when the student switches language). `setLocale` writes <html lang> and
+ * localStorage and fires a `localechange` event; this hook reads them and
+ * re-renders. A language the page has no text for reads as English.
+ * SSR-safe: starts 'en' and corrects on mount.
  */
-
 function readLocale(): Locale {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = window.localStorage.getItem('locale-preference');
-      if (stored === 'de' || stored === 'en') return stored;
-    } catch {
-      /* storage blocked — fall through to <html lang> */
+    if (typeof window !== 'undefined') {
+        try {
+            const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+            if (isLocale(stored)) return stored;
+        } catch {
+            /* storage blocked: fall through to <html lang> */
+        }
     }
-  }
-  if (typeof document !== 'undefined' && document.documentElement.lang === 'de') return 'de';
-  return 'en';
+    if (typeof document !== 'undefined') {
+        const attr = document.documentElement.lang;
+        if (isLocale(attr)) return attr;
+    }
+    return DEFAULT_LOCALE;
 }
 
 export function useLocale(): Locale {
-  const [locale, setLoc] = useState<Locale>('en');
+    const [locale, setLoc] = useState<Locale>(DEFAULT_LOCALE);
 
-  useEffect(() => {
-    setLoc(readLocale());
-    const onChange = (e: Event) => {
-      const next = (e as CustomEvent<{ locale?: string }>).detail?.locale;
-      setLoc(next === 'de' ? 'de' : next === 'en' ? 'en' : readLocale());
-    };
-    window.addEventListener('localechange', onChange);
-    return () => window.removeEventListener('localechange', onChange);
-  }, []);
+    useEffect(() => {
+        setLoc(readLocale());
+        const onChange = (e: Event) => {
+            const next = (e as CustomEvent<{ locale?: string }>).detail?.locale;
+            setLoc(isLocale(next) ? next : DEFAULT_LOCALE);
+        };
+        window.addEventListener('localechange', onChange);
+        return () => window.removeEventListener('localechange', onChange);
+    }, []);
 
-  return locale;
+    return locale;
+}
+
+/** Non-hook read, for site functions and stores. */
+export function currentLocale(): Locale {
+    return readLocale();
 }

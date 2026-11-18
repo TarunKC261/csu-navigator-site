@@ -6,11 +6,16 @@ import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 import { playUISound, playGlassSound } from '@/utils/soundGenerator';
 
+import { dict } from '@/lib/i18n/dict';
 // Control chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const CONTROL_STRINGS = {
+const CONTROL_STRINGS = dict({
   en: { reconnect: 'Reconnect', reconnecting: 'Reconnecting…', muteMic: 'Mute mic', unmuteMic: 'Unmute mic', openChat: 'Open chat', closeChat: 'Close chat' },
   de: { reconnect: 'Erneut verbinden', reconnecting: 'Erneute Verbindung…', muteMic: 'Mikrofon stummschalten', unmuteMic: 'Stummschaltung aufheben', openChat: 'Chat öffnen', closeChat: 'Chat schließen' },
-} as const;
+  es: { reconnect: 'Reconectar', reconnecting: 'Reconectando…', muteMic: 'Silenciar micrófono', unmuteMic: 'Activar micrófono', openChat: 'Abrir chat', closeChat: 'Cerrar chat' },
+  zh: { reconnect: '重新连接', reconnecting: '正在重新连接…', muteMic: '麦克风静音', unmuteMic: '取消麦克风静音', openChat: '打开聊天', closeChat: '关闭聊天' },
+  tl: { reconnect: 'Kumonekta muli', reconnecting: 'Kumokonekta muli…', muteMic: 'I-mute ang mic', unmuteMic: 'I-unmute ang mic', openChat: 'Buksan ang chat', closeChat: 'Isara ang chat' },
+  vi: { reconnect: 'Kết nối lại', reconnecting: 'Đang kết nối lại…', muteMic: 'Tắt micrô', unmuteMic: 'Bật micrô', openChat: 'Mở trò chuyện', closeChat: 'Đóng trò chuyện' },
+});
 
 interface VoiceControlsProps {
   className?: string;

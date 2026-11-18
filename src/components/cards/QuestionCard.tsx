@@ -5,13 +5,18 @@ import { HelpCircle, Send } from '@/lib/icons';
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // Fixed UI chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 // Dynamic content (question text, option chips, field badge) comes from the agent
 // in the right language already; only these captions are localized.
-const STRINGS = {
+const STRINGS = dict({
   en: { question: 'Question', fallbackQuestion: 'Could you clarify?', pickOne: 'Pick one', select: 'Select', pickOrSay: 'Pick one, or just say your answer', justSay: 'Just say your answer', working: "One moment, I'm getting that for you." },
   de: { question: 'Frage', fallbackQuestion: 'Könnten Sie das näher erläutern?', pickOne: 'Wählen Sie eine Option', select: 'Auswählen', pickOrSay: 'Wählen Sie eine Option oder sagen Sie einfach Ihre Antwort', justSay: 'Sagen Sie einfach Ihre Antwort', working: 'Einen Moment, ich hole das für Sie.' },
-} as const;
+  es: { question: 'Pregunta', fallbackQuestion: '¿Puedes aclararlo?', pickOne: 'Elige una', select: 'Elegir', pickOrSay: 'Elige una o simplemente di tu respuesta', justSay: 'Simplemente di tu respuesta', working: 'Un momento, ya lo busco.' },
+  zh: { question: '问题', fallbackQuestion: '能再说明一下吗？', pickOne: '选一个', select: '选择', pickOrSay: '选一个，或直接说出你的回答', justSay: '直接说出你的回答', working: '请稍等，我马上为你处理。' },
+  tl: { question: 'Tanong', fallbackQuestion: 'Puwede mo bang linawin?', pickOne: 'Pumili ng isa', select: 'Piliin', pickOrSay: 'Pumili ng isa, o sabihin lang ang sagot mo', justSay: 'Sabihin lang ang sagot mo', working: 'Sandali lang, kinukuha ko na.' },
+  vi: { question: 'Câu hỏi', fallbackQuestion: 'Bạn nói rõ hơn được không?', pickOne: 'Chọn một', select: 'Chọn', pickOrSay: 'Chọn một, hoặc cứ nói câu trả lời của bạn', justSay: 'Cứ nói câu trả lời của bạn', working: 'Chờ một chút, mình lấy ngay cho bạn.' },
+});
 
 /**
  * QuestionCard — on-screen template for any clarifying question the agent asks.

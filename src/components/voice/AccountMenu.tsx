@@ -11,8 +11,9 @@ import { downloadSessionLog } from '@/lib/logSink';
 import renderScene from '@/site-functions/renderScene';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // Fixed chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const MENU_STRINGS = {
+const MENU_STRINGS = dict({
     en: {
         feedback: 'Give feedback (survey)', feedbackAria: 'Open feedback survey', accountMenu: 'Account menu',
         endSession: 'End session', leaveTitle: 'Leave this session?',
@@ -25,7 +26,11 @@ const MENU_STRINGS = {
         leaveBody: 'Dies beendet Ihr Gespräch mit Val und bringt Sie zum Anfang zurück. Sie können jederzeit neu beginnen.',
         stay: 'Bleiben', leave: 'Verlassen', signedInAs: 'Angemeldet als',
     },
-} as const;
+  es: { feedback: 'Dar tu opinión (encuesta)', feedbackAria: 'Abrir la encuesta de opinión', accountMenu: 'Menú de la cuenta', endSession: 'Terminar sesión', leaveTitle: '¿Salir de esta sesión?', leaveBody: 'Esto termina tu conversación con Val y te lleva al inicio. Puedes empezar de nuevo cuando quieras.', stay: 'Quedarme', leave: 'Salir', signedInAs: 'Sesión iniciada como' },
+  zh: { feedback: '提供反馈（问卷）', feedbackAria: '打开反馈问卷', accountMenu: '账户菜单', endSession: '结束会话', leaveTitle: '要离开此会话吗？', leaveBody: '这将结束你与 Val 的对话并返回起始页。你随时可以重新开始。', stay: '留下', leave: '离开', signedInAs: '登录身份' },
+  tl: { feedback: 'Magbigay ng feedback (survey)', feedbackAria: 'Buksan ang feedback survey', accountMenu: 'Menu ng account', endSession: 'Tapusin ang session', leaveTitle: 'Umalis sa session na ito?', leaveBody: 'Tatapusin nito ang usapan mo kay Val at babalik ka sa simula. Puwede kang magsimula ulit anumang oras.', stay: 'Manatili', leave: 'Umalis', signedInAs: 'Naka-sign in bilang' },
+  vi: { feedback: 'Góp ý (khảo sát)', feedbackAria: 'Mở khảo sát góp ý', accountMenu: 'Menu tài khoản', endSession: 'Kết thúc phiên', leaveTitle: 'Rời phiên này?', leaveBody: 'Thao tác này kết thúc cuộc trò chuyện của bạn với Val và đưa bạn về trang đầu. Bạn có thể bắt đầu lại bất cứ lúc nào.', stay: 'Ở lại', leave: 'Rời đi', signedInAs: 'Đã đăng nhập với' },
+});
 
 /**
  * AccountMenu, the signed-in identity chip + End session.

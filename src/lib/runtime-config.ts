@@ -37,7 +37,8 @@ type ConfigKey =
     | 'BRAND_LOGO_URL'
     | 'PASSWORD_LOGIN_ENABLED'
     | 'ADMIN_USERNAME'
-    | 'ADMIN_PASSWORD_HASH';
+    | 'ADMIN_PASSWORD_HASH'
+    | 'VERIFY_GATE';
 
 declare global {
     interface Window {
@@ -124,4 +125,8 @@ export const config = {
     passwordLoginEnabled: () => resolve('PASSWORD_LOGIN_ENABLED', undefined, 'false').toLowerCase() === 'true',
     adminUsername: () => resolve('ADMIN_USERNAME', undefined, ''),
     adminPasswordHash: () => resolve('ADMIN_PASSWORD_HASH', undefined, ''),
+    // Student one-time-code door (merged from Venkat's build). 'mock' (default) =
+    // the code is made and checked in the browser and shown as a simulated text
+    // message; 'off' = no door. There is no real SMS in this static build.
+    verifyGate: () => resolve('VERIFY_GATE', undefined, 'mock').trim().toLowerCase(),
 };

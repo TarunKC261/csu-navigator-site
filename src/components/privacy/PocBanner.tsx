@@ -3,11 +3,12 @@
 import { usePrivacyStore } from '@/lib/stores/privacy-store';
 import { useLocale } from '@/lib/i18n/useLocale';
 
+import { dict } from '@/lib/i18n/dict';
 // PoC banner chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
-const POC_STRINGS = {
+const POC_STRINGS = dict({
     en: { lead: 'Proof of Concept.', tail: 'Use test or anonymized data only.', short: 'Use test data only.', privacy: 'Data Privacy Notice' },
     de: { lead: 'Proof of Concept.', tail: 'Nur Test- oder anonymisierte Daten verwenden.', short: 'Nur Testdaten verwenden.', privacy: 'Datenschutzhinweis' },
-} as const;
+});
 
 /**
  * PocBanner — persistent, non-dismissible Proof-of-Concept warning strip.
