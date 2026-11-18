@@ -6,7 +6,7 @@ import { ConsentGate } from '@/components/privacy/ConsentGate';
 
 // Pinned (not NEXT_PUBLIC_AGENT_NAME from the dashboard) so the tab title and
 // link previews always read as the product, whatever the agent is called there.
-const agentName = 'CSU Navigator';
+const agentName = 'CSU Student Engagement Platform';
 
 export const metadata: Metadata = {
   title: agentName,

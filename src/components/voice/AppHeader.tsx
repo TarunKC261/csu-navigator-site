@@ -9,8 +9,8 @@ import { logEvent } from '@/lib/sessionLog';
 
 // Header chrome, en/de. GERMAN IS A FIRST DRAFT — flag for native review.
 const HEADER_STRINGS = {
-  en: { goHome: 'Go to home page', title: 'CSU Navigator', bannerLead: 'Demo.', bannerTail: 'All student data is sample data.', bannerShort: 'Sample data only.', privacyFull: 'Data Privacy Notice', privacyShort: 'Privacy' },
-  de: { goHome: 'Zur Startseite', title: 'CSU Navigator', bannerLead: 'Proof of Concept.', bannerTail: 'Nur Test- oder anonymisierte Daten verwenden.', bannerShort: 'Nur Testdaten verwenden.', privacyFull: 'Datenschutzhinweis', privacyShort: 'Datenschutz' },
+  en: { goHome: 'Go to home page', title: 'CSU Student Engagement Platform', bannerLead: 'Demo.', bannerTail: 'All student data is sample data.', bannerShort: 'Sample data only.', privacyFull: 'Data Privacy Notice', privacyShort: 'Privacy' },
+  de: { goHome: 'Zur Startseite', title: 'CSU Student Engagement Platform', bannerLead: 'Proof of Concept.', bannerTail: 'Nur Test- oder anonymisierte Daten verwenden.', bannerShort: 'Nur Testdaten verwenden.', privacyFull: 'Datenschutzhinweis', privacyShort: 'Datenschutz' },
 } as const;
 import { useVoiceSessionStore } from '@/lib/stores/voice-session-store';
 import { AccountMenu } from '@/components/voice/AccountMenu';

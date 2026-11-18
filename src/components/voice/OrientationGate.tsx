@@ -47,7 +47,7 @@ export function OrientationGate() {
                 Please rotate your device
             </p>
             <p className="font-data text-sm" style={{ color: '#5A5A5A' }}>
-                CSU Navigator needs landscape orientation.
+                The CSU Student Engagement Platform needs landscape orientation.
             </p>
         </div>
     );

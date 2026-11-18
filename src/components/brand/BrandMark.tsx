@@ -28,7 +28,7 @@ export function BrandMark({ tone = 'dark', size = 'md' }: { tone?: 'dark' | 'lig
       </span>
       {/* The header already shows the product title next to the mark. */}
       {size === 'md' && (
-        <span className={`mt-1 font-data text-[9px] uppercase tracking-[0.18em] ${sub}`}>CSU Navigator</span>
+        <span className={`mt-1 font-data text-[9px] uppercase tracking-[0.18em] ${sub}`}>Student Engagement Platform</span>
       )}
     </span>
   );

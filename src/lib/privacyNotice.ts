@@ -29,7 +29,7 @@ export const NOTICE_SECTIONS: NoticeSection[] = [
     {
         label: 'About this demo',
         body: [
-            'CSU Navigator is a demonstration of an AI guide for students admitted to the California State University. It is not an official CSU service, and nothing you do here submits a form, books an appointment or sends a message.',
+            'The CSU Student Engagement Platform is a demonstration of an AI guide for students admitted to the California State University. It is not an official CSU service, and nothing you do here submits a form, books an appointment or sends a message.',
         ],
     },
     {

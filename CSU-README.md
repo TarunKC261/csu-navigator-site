@@ -1,6 +1,6 @@
-# CSU Navigator site
+# CSU Student Engagement Platform site (CSU Navigator repo)
 
-The front end of the CSU Navigator Tele ("Val") on the Mobeus platform. It has the same look and layout as the Henkel
+The front end of the CSU Student Engagement Platform Tele ("Val") on the Mobeus platform. It has the same look and layout as the Henkel
 DX Tele (Unisys build v0.8.2): sign-in page, data privacy notice, welcome page with quick actions, avatar column on
 the right with the connection timer and AI disclaimer, and cards on the left. The colours are CSU's.
 

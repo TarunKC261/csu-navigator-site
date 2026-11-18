@@ -382,9 +382,9 @@ function partOfDay(): string {
 // 'Maria') the greeting opens her story exactly as the Val prompt expects; with
 // none, a general welcome for whoever signed in.
 const GREETING_TAIL_PERSONA =
-  "your CSU Navigator. Two things could hold up your start at Fullerton, and both are fixable today. Want to start with your financial aid?";
+  "from the CSU Student Engagement Platform. Two things could hold up your start at Fullerton, and both are fixable today. Want to start with your financial aid?";
 const GREETING_TAIL_GENERAL =
-  "your CSU Navigator. I can help with financial aid, orientation, your classes and campus life. What would you like to start with?";
+  "from the CSU Student Engagement Platform. I can help with financial aid, orientation, your classes and campus life. What would you like to start with?";
 function greetingTail(): string {
   try {
     return config.greetingName() ? GREETING_TAIL_PERSONA : GREETING_TAIL_GENERAL;

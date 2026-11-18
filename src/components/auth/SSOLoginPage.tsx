@@ -55,7 +55,7 @@ export function SSOLoginPage({ onSignIn, onPasswordSignIn, error }: SSOLoginPage
             to day one.
           </h1>
           <p className="mt-6 max-w-md text-white/70">
-            CSU Navigator walks admitted students through financial aid, orientation, classes and
+            The CSU Student Engagement Platform walks admitted students through financial aid, orientation, classes and
             campus life, by voice or chat, one clear next step at a time.
           </p>
         </div>
@@ -66,7 +66,7 @@ export function SSOLoginPage({ onSignIn, onPasswordSignIn, error }: SSOLoginPage
       <div className="flex flex-1 items-center justify-center bg-[var(--henkel-surface-alt)] px-8 py-16">
         <div className="w-full max-w-sm">
           <h2 className="text-2xl font-bold text-[var(--henkel-ink)]">Welcome</h2>
-          <p className="mt-1 text-[var(--henkel-ink-muted)]">Sign in to open CSU Navigator</p>
+          <p className="mt-1 text-[var(--henkel-ink-muted)]">Sign in to the CSU Student Engagement Platform</p>
 
           <Button
             onClick={onSignIn}

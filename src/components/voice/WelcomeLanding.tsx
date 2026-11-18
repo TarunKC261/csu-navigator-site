@@ -39,7 +39,7 @@ const STRINGS_EN = {
   eyebrow: 'Home · Admitted Student Support',
   heroA: "Admitted? Let's get you", heroB: 'to day one.',
   lede1: 'Personal guidance for ', ledeAcc1: 'admitted CSU students',
-  lede2: ', by voice or chat. Ask about financial aid, orientation, classes or campus life, and the Navigator shows ',
+  lede2: ', by voice or chat. Ask about financial aid, orientation, classes or campus life, and Val shows ',
   ledeAcc2: 'your next step', lede3: ', with the forms, dates and people to help.',
   steps: [
     { title: 'Ask', caption: 'Speak or type your question' },
@@ -55,7 +55,7 @@ const STRINGS_EN = {
   reviewBadge: 'REVIEW BEFORE SUBMITTING',
   working: "One moment, I'm getting that for you.",
   readyHint: 'Ready — just start talking, or pick a quick action',
-  connectingHint: 'Connecting your Navigator…',
+  connectingHint: 'Connecting Val…',
   voiceCapabilities: 'What I can help with',
   capabilities: ['Explain a financial aid hold', 'Prepare your verification form', 'Pick an orientation date', 'Plan a 15-unit schedule', 'Show costs and pending aid', 'Compare CSU campuses', 'Map your major to a career', 'Connect you with a person'],
 };
