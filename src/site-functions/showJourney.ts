@@ -50,7 +50,7 @@ export default function showJourney(): Record<string, unknown> {
         ok: true,
         shown: 'journey card (5 steps, 2 done; next: financial aid verification, due July 15)',
         note:
-            'The card is on screen. Do not read it aloud. Say one line about the next step. ' +
-            'Tapping a step on the card sends its sentence to you as her message.',
+            'The card is on screen. Do not read it aloud. Say one line about the next step and ask if she wants to start it.' +
+            ' Then STOP and wait for her answer: do not call prefillForm or draw another card in this turn. Tapping a step on the card sends its sentence to you as her message.',
     };
 }
