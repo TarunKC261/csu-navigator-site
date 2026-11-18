@@ -12,7 +12,7 @@ the right with the connection timer and AI disclaimer, and cards on the left. Th
 2. **Data privacy notice.** Two ticks (microphone, notice) and a "join muted / mic on" choice. If the microphone is
    blocked or missing, **Continue with chat only** lets the visitor in, muted, with the chat panel open.
 3. **Student verification door** (`VERIFY_GATE: 'mock'`). Six code boxes for "the phone on your record ending
-   0142". A few seconds later a **simulated text message** with the code slides in (nothing is sent; this is a demo
+   5013". A few seconds later a **simulated text message** with the code slides in (nothing is sent; this is a demo
    of the step, not a security control). The student types the code or reads it out to Val (`verifyCode`). While
    the door is shut Val says the door line only and the record tools refuse. `VERIFY_GATE: 'off'` removes it.
 4. **Welcome page.** Four quick actions send the same phrases Val's prompt uses on her own card buttons.

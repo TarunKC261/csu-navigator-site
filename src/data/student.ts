@@ -48,7 +48,7 @@ export interface StudentRecord {
     term: string;
     studentType: 'First-time freshman' | 'Transfer';
     major: string;
-    /** Last four only, masked everywhere ("(•••) •••-0142"). */
+    /** Last four only, masked everywhere ("(•••) •••-5013"). */
     phoneLast4: string;
     /** Masked on every card ("•••-••-1270"); never spoken. */
     studentIdLast4: string;
@@ -99,7 +99,7 @@ const MARIA: StudentRecord = {
     term: 'Fall 2027',
     studentType: 'First-time freshman',
     major: 'Psychology, B.A.',
-    phoneLast4: '0142',
+    phoneLast4: '5013',
     studentIdLast4: '1270',
     textOptIn: true,
     emailOptIn: true,
