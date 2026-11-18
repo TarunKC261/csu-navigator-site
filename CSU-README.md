@@ -70,7 +70,8 @@ site's publishable key, exactly as the stock Mobeus starter does. Use sample dat
 - **Record-driven cards**: journey (`journey-card`, tap a step to work on it), cost (`aid-card`, no net figure while
   aid is on hold) and forms (`form-card`: verification "tax" packet, orientation, advising). All values come from
   `src/data/student.ts`, which mirrors `csu-teles/shared/demo-world.md`. Forms **save in the browser with a demo
-  reference** (`CSUF-DEMO-XXXXXX`) and say "Saved (demo)"; nothing is sent.
+  reference** (`CSUF-XXXXXX`) and say "Saved" (the card explains it goes to the campus system once the platform
+  is integrated); nothing is sent.
 - **Calendar links**: an `.ics` download and a Google Calendar link, built in the browser, only for dates on the record.
 - **Page text in 6 languages** (en, es, zh, tl, vi, de) via `setLocale`; any other language keeps English page text
   while Val speaks it. Non-English text is a first draft: have a native speaker review it.

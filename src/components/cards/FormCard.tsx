@@ -19,74 +19,74 @@ import { dict } from '@/lib/i18n/dict';
  *   3. Saving is the STUDENT'S click, never the agent's.
  *
  * DEMO RULE (CSU Student Engagement Platform): nothing leaves this demo. The
- * button SAVES the form in the browser with a demo reference number and the
- * card says "Saved (demo)". It never says "sent" or "submitted". Val is told
+ * button SAVES the form in the browser with a reference number and the card
+ * says "Saved". It never says "sent" or "submitted". Val is told
  * with a `[FORM SAVED]` note carrying the reference, so she can read it back.
  */
 const STRINGS = dict({
     en: {
         prefilled: 'Filled in from your CSU record',
-        review: 'Check these, then save. Nothing is sent in this demo.',
+        review: 'Check these, then save.',
         edit: 'Edit',
         save: 'Save',
         saving: 'Saving…',
-        saved: 'Saved (demo)',
-        savedBody: 'Nothing has left this demo. In the real platform this would go to your campus, and this reference is your proof.',
+        saved: 'Saved',
+        savedBody: 'When this platform is integrated with your campus, this information goes to your campus system.\nThis reference is your proof when you contact your campus.',
         reference: 'Your reference',
         failed: 'That did not save',
     },
     es: {
         prefilled: 'Completado desde tu expediente de CSU',
-        review: 'Revísalo y guárdalo. En esta demostración no se envía nada.',
+        review: 'Revísalo y guárdalo.',
         edit: 'Editar',
         save: 'Guardar',
         saving: 'Guardando…',
-        saved: 'Guardado (demostración)',
-        savedBody: 'Nada ha salido de esta demostración. En la plataforma real iría a tu campus, y esta referencia es tu comprobante.',
+        saved: 'Guardado',
+        savedBody: 'Cuando esta plataforma esté integrada con tu campus, esta información irá al sistema de tu campus.\nEsta referencia es tu comprobante cuando te comuniques con tu campus.',
         reference: 'Tu referencia',
         failed: 'No se pudo guardar',
     },
     tl: {
         prefilled: 'Napunan mula sa rekord mo sa CSU',
-        review: 'Tingnan mo ito, tapos i-save. Walang ipinapadala sa demo na ito.',
+        review: 'Tingnan mo ito, tapos i-save.',
         edit: 'I-edit',
         save: 'I-save',
         saving: 'Sine-save…',
-        saved: 'Na-save (demo)',
-        savedBody: 'Walang lumabas sa demo na ito. Sa totoong platform, mapupunta ito sa campus mo, at ang reference na ito ang patunay mo.',
+        saved: 'Na-save',
+        savedBody: 'Kapag nakakonekta na ang platform na ito sa campus mo, mapupunta ang impormasyong ito sa system ng campus mo.\nAng reference na ito ang patunay mo kapag kinontak mo ang campus mo.',
         reference: 'Ang reference mo',
         failed: 'Hindi na-save',
     },
     vi: {
         prefilled: 'Đã điền từ hồ sơ CSU của bạn',
-        review: 'Kiểm tra rồi lưu. Bản demo không gửi gì đi.',
+        review: 'Kiểm tra rồi lưu.',
         edit: 'Sửa',
         save: 'Lưu',
         saving: 'Đang lưu…',
-        saved: 'Đã lưu (demo)',
-        savedBody: 'Không có gì rời khỏi bản demo này. Trên nền tảng thật, biểu mẫu sẽ được gửi tới trường, và mã tham chiếu này là bằng chứng của bạn.',
+        saved: 'Đã lưu',
+        savedBody: 'Khi nền tảng này được kết nối với trường của bạn, thông tin này sẽ được chuyển vào hệ thống của trường.\nMã tham chiếu này là bằng chứng của bạn khi liên hệ với trường.',
         reference: 'Mã tham chiếu',
         failed: 'Không lưu được',
     },
     zh: {
         prefilled: '已根据你的 CSU 记录填写',
-        review: '请检查后保存。本演示不会发送任何内容。',
+        review: '请检查后保存。',
         edit: '编辑',
         save: '保存',
         saving: '正在保存…',
-        saved: '已保存（演示）',
-        savedBody: '本演示不会发出任何内容。在正式平台上，它会提交到你的校区，这个编号就是你的凭证。',
+        saved: '已保存',
+        savedBody: '当本平台与你的校区系统对接后，这些信息会进入校区系统。\n联系校区时，这个编号就是你的凭证。',
         reference: '你的编号',
         failed: '保存失败',
     },
     de: {
         prefilled: 'Aus deinem CSU-Datensatz ausgefüllt',
-        review: 'Prüfe die Angaben und speichere. In dieser Demo wird nichts gesendet.',
+        review: 'Prüfe die Angaben und speichere.',
         edit: 'Bearbeiten',
         save: 'Speichern',
         saving: 'Wird gespeichert…',
-        saved: 'Gespeichert (Demo)',
-        savedBody: 'Nichts hat diese Demo verlassen. In der echten Plattform ginge das an deinen Campus, und diese Referenz ist dein Nachweis.',
+        saved: 'Gespeichert',
+        savedBody: 'Sobald diese Plattform mit deinem Campus verbunden ist, gehen diese Angaben an das System deines Campus.\nDiese Referenz ist dein Nachweis, wenn du dich an deinen Campus wendest.',
         reference: 'Deine Referenz',
         failed: 'Speichern fehlgeschlagen',
     },
@@ -190,8 +190,9 @@ export function FormCard({ formId, title, intro, fields, submitLabel, submitPhra
         try {
             await tellAgent(
                 `${submitPhrase || 'I saved the form.'} [FORM SAVED] ${title ?? 'Form'}: ${summary}. ` +
-                    `Demo reference ${result.reference}. This is a demo: nothing was sent to the campus. ` +
-                    'Say it is saved for this demo, read the reference back, and give the one next step.',
+                    `Reference ${result.reference}. It is saved here; it has not reached a campus system. ` +
+                    'Say it is saved, read the reference back, and give the one next step. ' +
+                    'Never call it a demo, test or simulation, and never say the campus has received it.',
             );
         } catch {
             /* the confirmation on the card is already true */
@@ -206,7 +207,7 @@ export function FormCard({ formId, title, intro, fields, submitLabel, submitPhra
                 </div>
                 <h3 className="mt-3 font-voice text-lg font-semibold text-[var(--csu-ink)]">{t.saved}</h3>
                 <p className="mt-1 text-[14px] font-medium text-[var(--csu-ink)]">{title}</p>
-                <p className="mt-1.5 max-w-xs text-[14px] leading-relaxed text-[var(--csu-ink-muted)]">{t.savedBody}</p>
+                <p className="mt-1.5 max-w-sm whitespace-pre-line text-[14px] leading-relaxed text-[var(--csu-ink-muted)]">{t.savedBody}</p>
                 {reference && (
                     <div className="mt-4 w-full max-w-xs rounded-lg border border-[var(--csu-border)] bg-[var(--csu-surface-alt)] px-3 py-2.5">
                         <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--csu-ink-muted)]">{t.reference}</p>
